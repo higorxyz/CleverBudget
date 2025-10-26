@@ -173,6 +173,7 @@ try
 
     // Configuração do Data Protection para chaves persistentes
     var keysPath = builder.Configuration["DataProtection__KeysPath"] ?? Path.GetTempPath();
+    Log.Information($"🔑 Data Protection Keys Path: {keysPath}");
     builder.Services.AddDataProtection()
         .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 
