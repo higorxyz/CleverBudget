@@ -31,157 +31,159 @@ try
     // Adicionar Serilog
     builder.Host.UseSerilog();
 
-// Configuração do banco de dados (SQLite para desenvolvimento)
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    // Configuração do banco de dados (SQLite para desenvolvimento)
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Configuração do Identity
-builder.Services.AddIdentity<User, IdentityRole>(options =>
-{
-    options.Password.RequireDigit = true;
-    options.Password.RequiredLength = 6;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequireUppercase = true;
-    options.Password.RequireLowercase = true;
-    options.User.RequireUniqueEmail = true;
-})
-.AddEntityFrameworkStores<AppDbContext>()
-.AddDefaultTokenProviders();
-
-// Configuração do JWT
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"];
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+    // Configuração do Identity
+    builder.Services.AddIdentity<User, IdentityRole>(options =>
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!))
-    };
-});
+        options.Password.RequireDigit = true;
+        options.Password.RequiredLength = 6;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireLowercase = true;
+        options.User.RequireUniqueEmail = true;
+    })
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
 
-// FluentValidation
-builder.Services.AddValidatorsFromAssemblyContaining<RegisterDtoValidator>();
-builder.Services.AddFluentValidationAutoValidation();
+    // Configuração do JWT
+    var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+    var secretKey = jwtSettings["SecretKey"];
 
-// Controllers com configuração de respostas de erro personalizadas
-builder.Services.AddControllers()
-    .ConfigureApiBehaviorOptions(options =>
+    builder.Services.AddAuthentication(options =>
     {
-        options.InvalidModelStateResponseFactory = context =>
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            var errors = context.ModelState
-                .Where(e => e.Value?.Errors.Count > 0)
-                .SelectMany(e => e.Value!.Errors.Select(x => x.ErrorMessage))
-                .ToList();
-
-            return new BadRequestObjectResult(new
-            {
-                message = "Erro de validação",
-                errors = errors
-            });
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidAudience = jwtSettings["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!))
         };
     });
 
-builder.Services.AddEndpointsApiExplorer();
+    // FluentValidation
+    builder.Services.AddValidatorsFromAssemblyContaining<RegisterDtoValidator>();
+    builder.Services.AddFluentValidationAutoValidation();
 
-// Configuração do Swagger com autenticação JWT
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "CleverBudget API",
-        Version = "v1",
-        Description = "API para controle financeiro inteligente",
-        Contact = new OpenApiContact
+    // Controllers com configuração de respostas de erro personalizadas
+    builder.Services.AddControllers()
+        .ConfigureApiBehaviorOptions(options =>
         {
-            Name = "CleverBudget Team",
-            Email = "contato@cleverbudget.com"
-        }
-    });
-
-    // Configuração de segurança JWT no Swagger
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Insira o token JWT no formato: Bearer {seu token}"
-    });
-
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
+            options.InvalidModelStateResponseFactory = context =>
             {
-                Reference = new OpenApiReference
+                var errors = context.ModelState
+                    .Where(e => e.Value?.Errors.Count > 0)
+                    .SelectMany(e => e.Value!.Errors.Select(x => x.ErrorMessage))
+                    .ToList();
+
+                return new BadRequestObjectResult(new
                 {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            new string[] {}
-        }
-    });
-});
+                    message = "Erro de validação",
+                    errors = errors
+                });
+            };
+        });
 
-// CORS (permitir requisições do frontend)
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
+    builder.Services.AddEndpointsApiExplorer();
+
+    // Configuração do Swagger com autenticação JWT
+    builder.Services.AddSwaggerGen(options =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        options.SwaggerDoc("v1", new OpenApiInfo
+        {
+            Title = "CleverBudget API",
+            Version = "v1",
+            Description = "API para controle financeiro inteligente",
+            Contact = new OpenApiContact
+            {
+                Name = "CleverBudget Team",
+                Email = "contato@cleverbudget.com"
+            }
+        });
+
+        options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "Bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Insira o token JWT no formato: Bearer {seu token}"
+        });
+
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                new string[] {}
+            }
+        });
     });
-});
 
-// Registrar serviços da aplicação
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ITransactionService, TransactionService>();
-builder.Services.AddScoped<ICategoryService, CategoryService>();
-builder.Services.AddScoped<IGoalService, GoalService>();
-builder.Services.AddScoped<IReportService, ReportService>();
-
-var app = builder.Build();
-
-// Swagger em desenvolvimento
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
+    // CORS (permitir requisições do frontend)
+    builder.Services.AddCors(options =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "CleverBudget API v1");
-        c.RoutePrefix = string.Empty; // Swagger na raiz (http://localhost:5000)
+        options.AddPolicy("AllowAll", policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
     });
-}
 
-app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+    // Registrar serviços da aplicação
+    builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddScoped<ITransactionService, TransactionService>();
+    builder.Services.AddScoped<ICategoryService, CategoryService>();
+    builder.Services.AddScoped<IGoalService, GoalService>();
+    builder.Services.AddScoped<IReportService, ReportService>();
 
-// Adicionar Serilog para requisições HTTP
-app.UseSerilogRequestLogging();
+    var app = builder.Build();
 
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
+    // Configurar porta dinâmica do Railway
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+    app.Urls.Add($"http://*:{port}");
 
-Log.Information("✅ CleverBudget API iniciada com sucesso!");
+    // Swagger em desenvolvimento
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI(c =>
+        {
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "CleverBudget API v1");
+            c.RoutePrefix = string.Empty;
+        });
+    }
 
-app.Run();
+    app.UseHttpsRedirection();
+    app.UseCors("AllowAll");
+
+    app.UseSerilogRequestLogging();
+
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.MapControllers();
+
+    Log.Information("✅ CleverBudget API iniciada com sucesso!");
+
+    app.Run();
 }
 catch (Exception ex)
 {
