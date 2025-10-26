@@ -114,7 +114,7 @@ try
             Description = "API para controle financeiro inteligente",
             Contact = new OpenApiContact
             {
-                Name = "Higor Batista",
+                Name = "CleverBudget API Developer",
                 Email = "dev.higorxyz@gmail.com"
             }
         });
