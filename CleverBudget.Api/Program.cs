@@ -14,6 +14,8 @@ using FluentValidation.AspNetCore;
 using Serilog;
 using System.Text;
 using DotNetEnv;
+using Microsoft.AspNetCore.DataProtection;
+using System.IO;
 
 // Configurar Serilog
 Log.Logger = new LoggerConfiguration()
@@ -168,6 +170,10 @@ try
     builder.Services.AddScoped<IReportService, ReportService>();
     builder.Services.AddScoped<IExportService, ExportService>();
     
+    // Configuração do Data Protection para chaves persistentes
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(Path.GetTempPath()));
+    
     var app = builder.Build();
 
     // **Aplicar migrations automaticamente**
@@ -177,10 +183,6 @@ try
         Log.Information($"🔍 Connection string: {connectionString}");
         db.Database.Migrate();
     }
-
-    // Servir arquivos estáticos
-    app.UseDefaultFiles();
-    app.UseStaticFiles();
 
     // Swagger
     app.UseSwagger();
