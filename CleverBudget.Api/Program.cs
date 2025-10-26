@@ -32,8 +32,16 @@ try
     builder.Host.UseSerilog();
 
     // Configuração do banco de dados (PostgreSQL)
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    if (connectionString != null && connectionString.StartsWith("postgresql://"))
+    {
+        // Parse PostgreSQL URL format to connection string
+        var uri = new Uri(connectionString);
+        var userInfo = uri.UserInfo.Split(':');
+        connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]}";
+    }
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseNpgsql(connectionString));
 
     // Configuração do Identity
     builder.Services.AddIdentity<User, IdentityRole>(options =>
@@ -161,7 +169,6 @@ try
     using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
         Log.Information($"🔍 Connection string: {connectionString}");
         db.Database.Migrate();
     }
