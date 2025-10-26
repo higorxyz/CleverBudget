@@ -16,6 +16,8 @@ using System.Text;
 using DotNetEnv;
 using Microsoft.AspNetCore.DataProtection;
 using System.IO;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 // Configurar Serilog
 Log.Logger = new LoggerConfiguration()
@@ -171,11 +173,18 @@ try
     builder.Services.AddScoped<IReportService, ReportService>();
     builder.Services.AddScoped<IExportService, ExportService>();
 
-    // Configuração do Data Protection para chaves persistentes
+    // Configuração do Data Protection para chaves persistentes e criptografadas
     var keysPath = builder.Configuration["DATAPROTECTION_KEYS_PATH"] ?? Path.GetTempPath();
     Log.Information($"🔑 Data Protection Keys Path: {keysPath}");
+
+    // Gerar certificado auto-assinado para criptografar as chaves
+    var rsa = RSA.Create(2048);
+    var certRequest = new CertificateRequest("CN=CleverBudget", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+    var cert = certRequest.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddYears(1));
+
     builder.Services.AddDataProtection()
-        .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+        .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
+        .ProtectKeysWithCertificate(cert);
 
     var app = builder.Build();
 
