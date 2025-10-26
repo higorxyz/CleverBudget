@@ -21,12 +21,15 @@ RUN mkdir -p /data
 # Copiar arquivos publicados
 COPY --from=build /app/out .
 
-# Definir connection string absoluta para o SQLite
+# Definir connection string absoluta para o SQLite no container
 ENV ConnectionStrings__DefaultConnection="Data Source=/data/cleverbudget.db"
 
 # Garantir que a aplicação escute em todas as interfaces na porta fornecida pelo Railway
 ENV ASPNETCORE_URLS=http://0.0.0.0:${PORT}
 EXPOSE ${PORT}
+
+# Criar diretório para logs do Serilog
+RUN mkdir -p /app/logs
 
 # Rodar a aplicação
 ENTRYPOINT ["dotnet", "CleverBudget.Api.dll"]
