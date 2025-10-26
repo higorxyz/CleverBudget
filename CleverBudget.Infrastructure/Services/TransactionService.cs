@@ -1,8 +1,10 @@
+using CleverBudget.Core.Common;
 using CleverBudget.Core.DTOs;
 using CleverBudget.Core.Entities;
 using CleverBudget.Core.Enums;
 using CleverBudget.Core.Interfaces;
 using CleverBudget.Infrastructure.Data;
+using CleverBudget.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace CleverBudget.Infrastructure.Services;
@@ -16,6 +18,55 @@ public class TransactionService : ITransactionService
         _context = context;
     }
 
+    /// <summary>
+    /// Método NOVO com paginação
+    /// </summary>
+    public async Task<PagedResult<TransactionResponseDto>> GetPagedAsync(
+        string userId,
+        PaginationParams paginationParams,
+        TransactionType? type = null,
+        int? categoryId = null,
+        DateTime? startDate = null,
+        DateTime? endDate = null)
+    {
+        var query = _context.Transactions
+            .Include(t => t.Category)
+            .Where(t => t.UserId == userId);
+
+        if (type.HasValue)
+            query = query.Where(t => t.Type == type.Value);
+
+        if (categoryId.HasValue)
+            query = query.Where(t => t.CategoryId == categoryId.Value);
+
+        if (startDate.HasValue)
+            query = query.Where(t => t.Date >= startDate.Value);
+
+        if (endDate.HasValue)
+            query = query.Where(t => t.Date <= endDate.Value);
+
+        query = ApplySorting(query, paginationParams.SortBy, paginationParams.SortOrder);
+
+        var pagedQuery = query.Select(t => new TransactionResponseDto
+        {
+            Id = t.Id,
+            Amount = t.Amount,
+            Type = t.Type,
+            Description = t.Description,
+            CategoryId = t.CategoryId,
+            CategoryName = t.Category.Name,
+            CategoryIcon = t.Category.Icon ?? "",
+            CategoryColor = t.Category.Color ?? "",
+            Date = t.Date,
+            CreatedAt = t.CreatedAt
+        });
+
+        return await pagedQuery.ToPagedResultAsync(paginationParams);
+    }
+
+    /// <summary>
+    /// Método ORIGINAL mantido para compatibilidade
+    /// </summary>
     public async Task<IEnumerable<TransactionResponseDto>> GetAllAsync(
         string userId, 
         TransactionType? type = null, 
@@ -156,5 +207,37 @@ public class TransactionService : ITransactionService
         await _context.SaveChangesAsync();
 
         return true;
+    }
+
+    /// <summary>
+    /// Aplica ordenação dinâmica baseada nos parâmetros
+    /// </summary>
+    private IQueryable<Transaction> ApplySorting(
+        IQueryable<Transaction> query,
+        string? sortBy,
+        string? sortOrder)
+    {
+        var isDescending = sortOrder?.ToLower() == "desc";
+
+        return sortBy?.ToLower() switch
+        {
+            "date" => isDescending 
+                ? query.OrderByDescending(t => t.Date) 
+                : query.OrderBy(t => t.Date),
+            
+            "amount" => isDescending 
+                ? query.OrderByDescending(t => t.Amount) 
+                : query.OrderBy(t => t.Amount),
+            
+            "description" => isDescending 
+                ? query.OrderByDescending(t => t.Description) 
+                : query.OrderBy(t => t.Description),
+            
+            "category" => isDescending 
+                ? query.OrderByDescending(t => t.Category.Name) 
+                : query.OrderBy(t => t.Category.Name),
+            
+            _ => query.OrderByDescending(t => t.Date)
+        };
     }
 }
