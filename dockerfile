@@ -12,7 +12,7 @@ WORKDIR /app
 
 COPY --from=build /app/out .
 
-ENV ASPNETCORE_URLS=http://+:${PORT:-8080}
-EXPOSE ${PORT:-8080}
+ENV ASPNETCORE_URLS=http://+:${PORT:-5000}
+EXPOSE ${PORT:-5000}
 
 ENTRYPOINT ["dotnet", "CleverBudget.Api.dll"]
