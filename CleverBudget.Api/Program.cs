@@ -31,7 +31,7 @@ try
     // Adicionar Serilog
     builder.Host.UseSerilog();
 
-    // Configuração do banco de dados (SQLite para desenvolvimento)
+    // Configuração do banco de dados (SQLite)
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -96,7 +96,7 @@ try
 
     builder.Services.AddEndpointsApiExplorer();
 
-    // Configuração do Swagger com autenticação JWT
+    // Swagger com autenticação JWT
     builder.Services.AddSwaggerGen(options =>
     {
         options.SwaggerDoc("v1", new OpenApiInfo
@@ -137,7 +137,7 @@ try
         });
     });
 
-    // CORS (permitir requisições do frontend)
+    // CORS
     builder.Services.AddCors(options =>
     {
         options.AddPolicy("AllowAll", policy =>
@@ -157,26 +157,32 @@ try
 
     var app = builder.Build();
 
-    // Servir arquivos estáticos (index.html e wwwroot)
+    // **Aplicar migrations automaticamente**
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Database.Migrate();
+    }
+
+    // Servir arquivos estáticos
     app.UseDefaultFiles();
     app.UseStaticFiles();
 
-    // Habilitar Swagger em todos os ambientes para facilitar o teste e a exploração da API
+    // Swagger
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "CleverBudget API v1");
-        c.RoutePrefix = string.Empty; // Acessar Swagger UI pela raiz (/)
+        c.RoutePrefix = string.Empty;
     });
 
-    // O redirecionamento HTTPS é tratado pelo proxy reverso (Railway) em produção.
-    // Habilitar apenas em ambiente de não produção para evitar loops de redirecionamento.
+    // HTTPS (somente não produção)
     if (!app.Environment.IsProduction())
     {
         app.UseHttpsRedirection();
     }
-    app.UseCors("AllowAll");
 
+    app.UseCors("AllowAll");
     app.UseSerilogRequestLogging();
 
     app.UseAuthentication();
