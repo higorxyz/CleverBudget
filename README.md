@@ -75,6 +75,8 @@ dotnet ef database update --project CleverBudget.Infrastructure --startup-projec
 dotnet run --project CleverBudget.Api
 ```
 
+**Para desenvolvimento local:** As configurações sensíveis estão no arquivo `.env` na raiz do projeto. Certifique-se de que o arquivo existe e contém as chaves corretas. O aplicativo carrega automaticamente as variáveis de ambiente do `.env`.
+
 A API estará disponível em: **http://localhost:5000**
 
 Documentação Swagger: **http://localhost:5000**
@@ -132,14 +134,14 @@ A API utiliza **JWT Bearer Token**. Para acessar endpoints protegidos:
 - [x] Sistema de Metas
 - [x] Relatórios Financeiros
 
-### 🔄 Fase 2 - Recursos Avançados (Próximo)
+### 🔄 Fase 2 - Recursos Avançados (Em andamento)
 - [ ] Exportação PDF/CSV
 - [ ] Notificações por Email (SendGrid)
 - [ ] Validações com FluentValidation
 - [ ] Testes unitários (70%+ cobertura)
 - [ ] Deploy no Railway
 
-### 🚀 Fase 3 - Inteligência (Futuro)
+### 🚀 Fase 3 - Inteligência (Próximo)
 - [ ] Insights financeiros automáticos
 - [ ] Previsão de gastos
 - [ ] Gamificação (conquistas/níveis)
@@ -167,6 +169,12 @@ dotnet test /p:CollectCoverage=true
 2. Configure as variáveis de ambiente:
    - `ConnectionStrings__DefaultConnection`
    - `JwtSettings__SecretKey`
+   - `JwtSettings__Issuer`
+   - `JwtSettings__Audience`
+   - `JwtSettings__ExpirationMinutes`
+   - `SendGrid__ApiKey`
+   - `SendGrid__FromEmail`
+   - `SendGrid__FromName`
 3. Deploy automático a cada push na `main`
 
 ---
