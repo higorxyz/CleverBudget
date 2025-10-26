@@ -15,14 +15,8 @@ RUN dotnet publish CleverBudget.Api/CleverBudget.Api.csproj -c Release -o /app/o
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 
-# Criar diretório persistente para o SQLite
-RUN mkdir -p /data
-
 # Copiar arquivos publicados
 COPY --from=build /app/out .
-
-# Definir connection string absoluta para o SQLite no container
-ENV ConnectionStrings__DefaultConnection="Data Source=/data/cleverbudget.db"
 
 # Garantir que a aplicação escute em todas as interfaces na porta fornecida pelo Railway
 ENV ASPNETCORE_URLS=http://0.0.0.0:${PORT}

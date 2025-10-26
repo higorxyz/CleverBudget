@@ -31,9 +31,9 @@ try
     // Adicionar Serilog
     builder.Host.UseSerilog();
 
-    // Configuração do banco de dados (SQLite)
+    // Configuração do banco de dados (PostgreSQL)
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
     // Configuração do Identity
     builder.Services.AddIdentity<User, IdentityRole>(options =>
@@ -161,6 +161,8 @@ try
     using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+        Log.Information($"🔍 Connection string: {connectionString}");
         db.Database.Migrate();
     }
 

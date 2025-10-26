@@ -24,7 +24,7 @@ public class AppDbContext : IdentityDbContext<User>
             entity.HasKey(t => t.Id);
             entity.Property(t => t.Amount).HasColumnType("decimal(18,2)");
             entity.Property(t => t.Description).HasMaxLength(500);
-            entity.Property(t => t.CreatedAt).HasDefaultValueSql("datetime('now')");
+            entity.Property(t => t.CreatedAt).HasDefaultValueSql("NOW()");
             
             entity.HasOne(t => t.User)
                 .WithMany(u => u.Transactions)
@@ -44,7 +44,7 @@ public class AppDbContext : IdentityDbContext<User>
             entity.Property(c => c.Name).HasMaxLength(100).IsRequired();
             entity.Property(c => c.Icon).HasMaxLength(50);
             entity.Property(c => c.Color).HasMaxLength(20);
-            entity.Property(c => c.CreatedAt).HasDefaultValueSql("datetime('now')");
+            entity.Property(c => c.CreatedAt).HasDefaultValueSql("NOW()");
 
             entity.HasOne(c => c.User)
                 .WithMany(u => u.Categories)
@@ -57,7 +57,7 @@ public class AppDbContext : IdentityDbContext<User>
         {
             entity.HasKey(g => g.Id);
             entity.Property(g => g.TargetAmount).HasColumnType("decimal(18,2)");
-            entity.Property(g => g.CreatedAt).HasDefaultValueSql("datetime('now')");
+            entity.Property(g => g.CreatedAt).HasDefaultValueSql("NOW()");
 
             entity.HasOne(g => g.User)
                 .WithMany(u => u.Goals)
@@ -73,7 +73,7 @@ public class AppDbContext : IdentityDbContext<User>
         // Configurações de User
         modelBuilder.Entity<User>(entity =>
         {
-            entity.Property(u => u.CreatedAt).HasDefaultValueSql("datetime('now')");
+            entity.Property(u => u.CreatedAt).HasDefaultValueSql("NOW()");
         });
     }
 }
