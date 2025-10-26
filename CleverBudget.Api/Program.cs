@@ -157,26 +157,24 @@ try
 
     var app = builder.Build();
 
-    // Configurar porta dinâmica do Railway
-    var port = Environment.GetEnvironmentVariable("PORT") ?? "5000"; // fallback local
-    app.Urls.Add($"http://*:{port}");
-
     // Servir arquivos estáticos (index.html e wwwroot)
     app.UseDefaultFiles();
     app.UseStaticFiles();
 
-    // Swagger apenas em desenvolvimento
-    if (app.Environment.IsDevelopment())
+    // Habilitar Swagger em todos os ambientes para facilitar o teste e a exploração da API
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
     {
-        app.UseSwagger();
-        app.UseSwaggerUI(c =>
-        {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "CleverBudget API v1");
-            c.RoutePrefix = string.Empty;
-        });
-    }
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "CleverBudget API v1");
+        c.RoutePrefix = string.Empty; // Acessar Swagger UI pela raiz (/)
+    });
 
-    app.UseHttpsRedirection();
+    // O redirecionamento HTTPS é tratado pelo proxy reverso (Railway) em produção.
+    // Habilitar apenas em ambiente de não produção para evitar loops de redirecionamento.
+    if (!app.Environment.IsProduction())
+    {
+        app.UseHttpsRedirection();
+    }
     app.UseCors("AllowAll");
 
     app.UseSerilogRequestLogging();

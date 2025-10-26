@@ -12,7 +12,8 @@ WORKDIR /app
 
 COPY --from=build /app/out .
 
-ENV ASPNETCORE_URLS=http://+:${PORT}
+# Garante que a aplicação escute em todas as interfaces na porta fornecida pelo Railway
+ENV ASPNETCORE_URLS=http://0.0.0.0:${PORT}
 EXPOSE ${PORT}
 
 ENTRYPOINT ["dotnet", "CleverBudget.Api.dll"]

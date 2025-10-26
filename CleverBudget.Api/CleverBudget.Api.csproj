@@ -24,5 +24,10 @@
     <ProjectReference Include="..\CleverBudget.Infrastructure\CleverBudget.Infrastructure.csproj" />
     <ProjectReference Include="..\CleverBudget.Core\CleverBudget.Core.csproj" />
   </ItemGroup>
+  
+  <ItemGroup>
+  <Content Include="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
+</ItemGroup>
+
 
 </Project>
