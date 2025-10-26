@@ -191,7 +191,7 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ## 👨‍💻 Autor
 
-**Seu Nome**
+**Higor Batista**
 
 - GitHub: [@higorxyz](https://github.com/higorxyz)
 - LinkedIn: [Higor Batista](https://linkedin.com/in/higorbatista)
