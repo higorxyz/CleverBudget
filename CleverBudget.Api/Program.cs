@@ -161,8 +161,11 @@ try
     var port = Environment.GetEnvironmentVariable("PORT") ?? "5000"; // fallback local
     app.Urls.Add($"http://*:{port}");
 
+    // Servir arquivos estáticos (index.html e wwwroot)
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
 
-    // Swagger em desenvolvimento
+    // Swagger apenas em desenvolvimento
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
@@ -180,6 +183,7 @@ try
 
     app.UseAuthentication();
     app.UseAuthorization();
+
     app.MapControllers();
 
     Log.Information("✅ CleverBudget API iniciada com sucesso!");
