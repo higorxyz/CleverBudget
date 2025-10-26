@@ -55,7 +55,6 @@ public class CategoryService : ICategoryService
 
     public async Task<CategoryResponseDto?> CreateAsync(CreateCategoryDto dto, string userId)
     {
-        // Verificar se já existe categoria com esse nome para o usuário
         var exists = await _context.Categories
             .AnyAsync(c => c.UserId == userId && c.Name.ToLower() == dto.Name.ToLower());
 
@@ -86,13 +85,11 @@ public class CategoryService : ICategoryService
         if (category == null)
             return null;
 
-        // Não permitir editar categorias padrão
         if (category.IsDefault)
             return null;
 
         if (!string.IsNullOrEmpty(dto.Name))
         {
-            // Verificar se novo nome já existe
             var nameExists = await _context.Categories
                 .AnyAsync(c => c.UserId == userId && c.Id != id && c.Name.ToLower() == dto.Name.ToLower());
 
@@ -122,11 +119,9 @@ public class CategoryService : ICategoryService
         if (category == null)
             return false;
 
-        // Não permitir deletar categorias padrão
         if (category.IsDefault)
             return false;
 
-        // Não permitir deletar se houver transações associadas
         if (category.Transactions.Any())
             return false;
 

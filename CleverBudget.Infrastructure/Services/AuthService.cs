@@ -26,16 +26,13 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto?> RegisterAsync(RegisterDto registerDto)
     {
-        // Validar senhas
         if (registerDto.Password != registerDto.ConfirmPassword)
             return null;
 
-        // Verificar se email já existe
         var existingUser = await _userManager.FindByEmailAsync(registerDto.Email);
         if (existingUser != null)
             return null;
 
-        // Criar usuário
         var user = new User
         {
             UserName = registerDto.Email,
@@ -50,10 +47,8 @@ public class AuthService : IAuthService
         if (!result.Succeeded)
             return null;
 
-        // Criar categorias padrão para o usuário
         await CreateDefaultCategoriesAsync(user.Id);
 
-        // Gerar token
         return GenerateAuthResponse(user);
     }
 

@@ -19,7 +19,6 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
-// Configurar Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(new ConfigurationBuilder()
         .AddJsonFile("appsettings.json")
@@ -32,19 +31,15 @@ try
 {
     Log.Information("🚀 Iniciando CleverBudget API...");
 
-    // Carregar variáveis de ambiente do .env
     DotNetEnv.Env.Load();
 
     var builder = WebApplication.CreateBuilder(args);
 
-    // Adicionar Serilog
     builder.Host.UseSerilog();
 
-    // Configuração do banco de dados (PostgreSQL)
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     if (connectionString != null && connectionString.StartsWith("postgresql://"))
     {
-        // Parse PostgreSQL URL format to connection string
         var uri = new Uri(connectionString);
         var userInfo = uri.UserInfo.Split(':');
         connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]}";
@@ -52,7 +47,6 @@ try
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(connectionString));
 
-    // Configuração do Identity
     builder.Services.AddIdentity<User, IdentityRole>(options =>
     {
         options.Password.RequireDigit = true;
@@ -65,7 +59,6 @@ try
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
-    // Configuração do JWT
     var jwtSettings = builder.Configuration.GetSection("JwtSettings");
     var secretKey = jwtSettings["SecretKey"];
 
@@ -88,11 +81,9 @@ try
         };
     });
 
-    // FluentValidation
     builder.Services.AddValidatorsFromAssemblyContaining<RegisterDtoValidator>();
     builder.Services.AddFluentValidationAutoValidation();
 
-    // Controllers com configuração de respostas de erro personalizadas
     builder.Services.AddControllers()
         .ConfigureApiBehaviorOptions(options =>
         {
@@ -113,7 +104,6 @@ try
 
     builder.Services.AddEndpointsApiExplorer();
 
-    // Swagger com autenticação JWT
     builder.Services.AddSwaggerGen(options =>
     {
         options.SwaggerDoc("v1", new OpenApiInfo
@@ -154,7 +144,6 @@ try
         });
     });
 
-    // CORS
     builder.Services.AddCors(options =>
     {
         options.AddPolicy("AllowAll", policy =>
@@ -165,7 +154,6 @@ try
         });
     });
 
-    // Registrar serviços da aplicação
     builder.Services.AddScoped<IAuthService, AuthService>();
     builder.Services.AddScoped<ITransactionService, TransactionService>();
     builder.Services.AddScoped<ICategoryService, CategoryService>();
@@ -173,11 +161,9 @@ try
     builder.Services.AddScoped<IReportService, ReportService>();
     builder.Services.AddScoped<IExportService, ExportService>();
 
-    // Configuração do Data Protection para chaves persistentes e criptografadas
     var keysPath = builder.Configuration["DATAPROTECTION_KEYS_PATH"] ?? Path.GetTempPath();
     Log.Information($"🔑 Data Protection Keys Path: {keysPath}");
 
-    // Gerar certificado auto-assinado para criptografar as chaves
     var rsa = RSA.Create(2048);
     var certRequest = new CertificateRequest("CN=CleverBudget", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
     var cert = certRequest.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddYears(1));
@@ -188,7 +174,6 @@ try
 
     var app = builder.Build();
 
-    // **Aplicar migrations automaticamente**
     using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -196,7 +181,6 @@ try
         db.Database.Migrate();
     }
 
-    // Swagger
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
@@ -204,7 +188,6 @@ try
         c.RoutePrefix = string.Empty;
     });
 
-    // HTTPS (somente não produção)
     if (!app.Environment.IsProduction())
     {
         app.UseHttpsRedirection();

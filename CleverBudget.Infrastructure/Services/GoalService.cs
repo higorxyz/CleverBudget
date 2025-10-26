@@ -73,14 +73,12 @@ public class GoalService : IGoalService
 
     public async Task<GoalResponseDto?> CreateAsync(CreateGoalDto dto, string userId)
     {
-        // Verificar se categoria existe
         var categoryExists = await _context.Categories
             .AnyAsync(c => c.Id == dto.CategoryId && c.UserId == userId);
 
         if (!categoryExists)
             return null;
 
-        // Verificar se já existe meta para essa categoria nesse mês/ano
         var existingGoal = await _context.Goals
             .AnyAsync(g => g.UserId == userId && 
                           g.CategoryId == dto.CategoryId && 
@@ -153,7 +151,6 @@ public class GoalService : IGoalService
 
         foreach (var goal in goals)
         {
-            // Calcular total gasto na categoria no mês
             var totalSpent = await _context.Transactions
                 .Where(t => t.UserId == userId &&
                            t.CategoryId == goal.CategoryId &&

@@ -125,27 +125,43 @@ A API utiliza **JWT Bearer Token**. Para acessar endpoints protegidos:
 
 ---
 
-## 🎯 Roadmap
+## 🎯 Roadmap — Linha do Tempo Visual
 
-### ✅ Fase 1 - MVP (Concluído)
-- [x] Autenticação JWT
-- [x] CRUD de Transações
-- [x] CRUD de Categorias
-- [x] Sistema de Metas
-- [x] Relatórios Financeiros
+🟢 **Fase 1 — MVP (Concluído)**
+- ✅ Autenticação JWT
+- ✅ CRUD de Transações
+- ✅ CRUD de Categorias
+- ✅ Sistema de Metas
+- ✅ Relatórios Financeiros
 
-### 🔄 Fase 2 - Recursos Avançados (Em andamento)
-- [ ] Exportação PDF/CSV
-- [ ] Notificações por Email (SendGrid)
-- [ ] Validações com FluentValidation
-- [ ] Testes unitários (70%+ cobertura)
-- [ ] Deploy no Railway
+🔵 **Fase 2 — Recursos Avançados (Em andamento)**
+- ⬜ Exportação PDF/CSV
+- ⬜ Notificações por Email (SendGrid)
+- ⬜ Transações Recorrentes
+- ⬜ Orçamentos Mensais com alertas
+- ⬜ Perfil de Usuário (nome, email, senha, foto)
+- ⬜ Validações com FluentValidation
+- ⬜ Testes unitários (70%+ cobertura)
+- ⬜ Rate Limiting
+- ⬜ Deploy no Railway
 
-### 🚀 Fase 3 - Inteligência (Próximo)
-- [ ] Insights financeiros automáticos
-- [ ] Previsão de gastos
-- [ ] Gamificação (conquistas/níveis)
-- [ ] Frontend React + Vercel
+🟡 **Fase 3 — Inteligência e SaaS (Próximo)**
+- ⬜ Insights financeiros automáticos
+- ⬜ Previsão de gastos
+- ⬜ Gamificação (conquistas/níveis)
+- ⬜ Multi-moeda (USD, EUR)
+- ⬜ Painel Admin (usuários, logs, auditoria)
+- ⬜ Frontend React + Vercel
+- ⬜ Integração com bancos (Open Banking)
+- ⬜ Monitoramento e observabilidade
+- ⬜ Backup/Restore de dados
+
+---
+
+💡 **Legenda:**  
+- ✅ Concluído  
+- 🔄 Em andamento  
+- ⬜ Pendente / Planejado
 
 ---
 

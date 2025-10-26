@@ -3,12 +3,9 @@ builder = "dockerfile"
 dockerfilePath = "./dockerfile"
 
 [deploy]
-# Comando de start da aplicação
 startCommand = "dotnet CleverBudget.Api.dll"
 
-# Bind da porta definida pelo Railway
 port = "${PORT}"
 
 [volumes]
-# Volume persistente para o banco SQLite
 data = "/data"

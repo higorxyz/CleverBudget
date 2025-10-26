@@ -85,7 +85,6 @@ public class TransactionService : ITransactionService
 
     public async Task<TransactionResponseDto?> CreateAsync(CreateTransactionDto dto, string userId)
     {
-        // Verificar se a categoria existe e pertence ao usuário
         var categoryExists = await _context.Categories
             .AnyAsync(c => c.Id == dto.CategoryId && c.UserId == userId);
 
@@ -117,7 +116,6 @@ public class TransactionService : ITransactionService
         if (transaction == null)
             return null;
 
-        // Se tentar mudar a categoria, validar
         if (dto.CategoryId.HasValue && dto.CategoryId.Value != transaction.CategoryId)
         {
             var categoryExists = await _context.Categories
