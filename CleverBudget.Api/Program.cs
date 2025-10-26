@@ -25,6 +25,7 @@ Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .CreateLogger();
 
+
 try
 {
     Log.Information("🚀 Iniciando CleverBudget API...");
@@ -169,11 +170,11 @@ try
     builder.Services.AddScoped<IGoalService, GoalService>();
     builder.Services.AddScoped<IReportService, ReportService>();
     builder.Services.AddScoped<IExportService, ExportService>();
-    
+
     // Configuração do Data Protection para chaves persistentes
     builder.Services.AddDataProtection()
         .PersistKeysToFileSystem(new DirectoryInfo(Path.GetTempPath()));
-    
+
     var app = builder.Build();
 
     // **Aplicar migrations automaticamente**
