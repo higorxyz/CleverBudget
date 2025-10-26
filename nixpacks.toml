@@ -1,8 +1,14 @@
 [phases.setup]
-nixPkgs = ["dotnet-sdk_9"]
+cmds = [
+  "wget https://dot.net/v1/dotnet-install.sh",
+  "chmod +x dotnet-install.sh",
+  "./dotnet-install.sh --channel 9.0",
+  "export PATH=$PATH:/root/.dotnet"
+]
 
 [phases.build]
 cmds = [
+  "dotnet --info",
   "dotnet restore",
   "dotnet publish CleverBudget.Api/CleverBudget.Api.csproj -c Release -o out"
 ]
