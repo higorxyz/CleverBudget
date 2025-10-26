@@ -13,6 +13,7 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Serilog;
 using System.Text;
+using DotNetEnv;
 
 // Configurar Serilog
 Log.Logger = new LoggerConfiguration()
@@ -25,6 +26,9 @@ Log.Logger = new LoggerConfiguration()
 try
 {
     Log.Information("🚀 Iniciando CleverBudget API...");
+
+    // Carregar variáveis de ambiente do .env
+    DotNetEnv.Env.Load();
 
     var builder = WebApplication.CreateBuilder(args);
 
