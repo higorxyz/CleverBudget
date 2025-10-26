@@ -1,3 +1,4 @@
+using CleverBudget.Core.Common;
 using CleverBudget.Core.DTOs;
 using CleverBudget.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -24,10 +25,46 @@ public class GoalsController : ControllerBase
     }
 
     /// <summary>
-    /// Listar todas as metas do usuário
+    /// Listar metas com paginação
     /// </summary>
+    /// <param name="page">Número da página (padrão: 1)</param>
+    /// <param name="pageSize">Itens por página (padrão: 10, máximo: 100)</param>
+    /// <param name="sortBy">Campo para ordenação: targetAmount, category, month, year</param>
+    /// <param name="sortOrder">Ordem: asc ou desc (padrão: desc)</param>
+    /// <param name="month">Filtrar por mês (1-12)</param>
+    /// <param name="year">Filtrar por ano</param>
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int? month = null, [FromQuery] int? year = null)
+    [ProducesResponseType(typeof(PagedResult<GoalResponseDto>), 200)]
+    [ProducesResponseType(401)]
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? sortOrder = "desc",
+        [FromQuery] int? month = null, 
+        [FromQuery] int? year = null)
+    {
+        var userId = GetUserId();
+        
+        var paginationParams = new PaginationParams
+        {
+            Page = page,
+            PageSize = pageSize,
+            SortBy = sortBy,
+            SortOrder = sortOrder
+        };
+
+        var result = await _goalService.GetPagedAsync(userId, paginationParams, month, year);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Listar todas as metas (sem paginação)
+    /// </summary>
+    [HttpGet("all")]
+    public async Task<IActionResult> GetAllWithoutPagination(
+        [FromQuery] int? month = null, 
+        [FromQuery] int? year = null)
     {
         var userId = GetUserId();
         var goals = await _goalService.GetAllAsync(userId, month, year);

@@ -1,3 +1,4 @@
+using CleverBudget.Core.Common;
 using CleverBudget.Core.DTOs;
 using CleverBudget.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -24,10 +25,40 @@ public class CategoriesController : ControllerBase
     }
 
     /// <summary>
-    /// Listar todas as categorias do usuário
+    /// Listar categorias com paginação
     /// </summary>
+    /// <param name="page">Número da página (padrão: 1)</param>
+    /// <param name="pageSize">Itens por página (padrão: 20, máximo: 100)</param>
+    /// <param name="sortBy">Campo para ordenação: name, createdAt, isDefault</param>
+    /// <param name="sortOrder">Ordem: asc ou desc (padrão: asc)</param>
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    [ProducesResponseType(typeof(PagedResult<CategoryResponseDto>), 200)]
+    [ProducesResponseType(401)]
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? sortBy = "name",
+        [FromQuery] string? sortOrder = "asc")
+    {
+        var userId = GetUserId();
+        
+        var paginationParams = new PaginationParams
+        {
+            Page = page,
+            PageSize = pageSize,
+            SortBy = sortBy,
+            SortOrder = sortOrder
+        };
+
+        var result = await _categoryService.GetPagedAsync(userId, paginationParams);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Listar todas as categorias (sem paginação) - use apenas para dropdowns
+    /// </summary>
+    [HttpGet("all")]
+    public async Task<IActionResult> GetAllWithoutPagination()
     {
         var userId = GetUserId();
         var categories = await _categoryService.GetAllAsync(userId);

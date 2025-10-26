@@ -1,8 +1,10 @@
+using CleverBudget.Core.Common;
 using CleverBudget.Core.DTOs;
 using CleverBudget.Core.Entities;
 using CleverBudget.Core.Enums;
 using CleverBudget.Core.Interfaces;
 using CleverBudget.Infrastructure.Data;
+using CleverBudget.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace CleverBudget.Infrastructure.Services;
@@ -16,6 +18,48 @@ public class GoalService : IGoalService
         _context = context;
     }
 
+    /// <summary>
+    /// Método NOVO com paginação
+    /// </summary>
+    public async Task<PagedResult<GoalResponseDto>> GetPagedAsync(
+        string userId, 
+        PaginationParams paginationParams,
+        int? month = null, 
+        int? year = null)
+    {
+        var query = _context.Goals
+            .Include(g => g.Category)
+            .Where(g => g.UserId == userId);
+
+        if (month.HasValue)
+            query = query.Where(g => g.Month == month.Value);
+
+        if (year.HasValue)
+            query = query.Where(g => g.Year == year.Value);
+
+        // Aplicar ordenação
+        query = ApplySorting(query, paginationParams.SortBy, paginationParams.SortOrder);
+
+        // Projeção e paginação
+        var pagedQuery = query.Select(g => new GoalResponseDto
+        {
+            Id = g.Id,
+            CategoryId = g.CategoryId,
+            CategoryName = g.Category.Name,
+            CategoryIcon = g.Category.Icon ?? "",
+            CategoryColor = g.Category.Color ?? "",
+            TargetAmount = g.TargetAmount,
+            Month = g.Month,
+            Year = g.Year,
+            CreatedAt = g.CreatedAt
+        });
+
+        return await pagedQuery.ToPagedResultAsync(paginationParams);
+    }
+
+    /// <summary>
+    /// Método ORIGINAL mantido
+    /// </summary>
     public async Task<IEnumerable<GoalResponseDto>> GetAllAsync(string userId, int? month = null, int? year = null)
     {
         var query = _context.Goals
@@ -185,5 +229,37 @@ public class GoalService : IGoalService
         }
 
         return goalsStatus.OrderByDescending(g => g.Percentage);
+    }
+
+    /// <summary>
+    /// Aplica ordenação dinâmica
+    /// </summary>
+    private IQueryable<Goal> ApplySorting(
+        IQueryable<Goal> query,
+        string? sortBy,
+        string? sortOrder)
+    {
+        var isDescending = sortOrder?.ToLower() == "desc";
+
+        return sortBy?.ToLower() switch
+        {
+            "targetamount" => isDescending 
+                ? query.OrderByDescending(g => g.TargetAmount) 
+                : query.OrderBy(g => g.TargetAmount),
+            
+            "category" => isDescending 
+                ? query.OrderByDescending(g => g.Category.Name) 
+                : query.OrderBy(g => g.Category.Name),
+            
+            "month" => isDescending 
+                ? query.OrderByDescending(g => g.Month) 
+                : query.OrderBy(g => g.Month),
+            
+            "year" => isDescending 
+                ? query.OrderByDescending(g => g.Year) 
+                : query.OrderBy(g => g.Year),
+            
+            _ => query.OrderByDescending(g => g.Year).ThenByDescending(g => g.Month) // Default
+        };
     }
 }

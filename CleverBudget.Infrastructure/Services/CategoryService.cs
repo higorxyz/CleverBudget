@@ -1,7 +1,9 @@
+using CleverBudget.Core.Common;
 using CleverBudget.Core.DTOs;
 using CleverBudget.Core.Entities;
 using CleverBudget.Core.Interfaces;
 using CleverBudget.Infrastructure.Data;
+using CleverBudget.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace CleverBudget.Infrastructure.Services;
@@ -15,6 +17,36 @@ public class CategoryService : ICategoryService
         _context = context;
     }
 
+    /// <summary>
+    /// Método NOVO com paginação
+    /// </summary>
+    public async Task<PagedResult<CategoryResponseDto>> GetPagedAsync(
+        string userId, 
+        PaginationParams paginationParams)
+    {
+        var query = _context.Categories
+            .Where(c => c.UserId == userId);
+
+        // Aplicar ordenação
+        query = ApplySorting(query, paginationParams.SortBy, paginationParams.SortOrder);
+
+        // Projeção e paginação
+        var pagedQuery = query.Select(c => new CategoryResponseDto
+        {
+            Id = c.Id,
+            Name = c.Name,
+            Icon = c.Icon,
+            Color = c.Color,
+            IsDefault = c.IsDefault,
+            CreatedAt = c.CreatedAt
+        });
+
+        return await pagedQuery.ToPagedResultAsync(paginationParams);
+    }
+
+    /// <summary>
+    /// Método ORIGINAL mantido
+    /// </summary>
     public async Task<IEnumerable<CategoryResponseDto>> GetAllAsync(string userId)
     {
         var categories = await _context.Categories
@@ -129,5 +161,33 @@ public class CategoryService : ICategoryService
         await _context.SaveChangesAsync();
 
         return true;
+    }
+
+    /// <summary>
+    /// Aplica ordenação dinâmica
+    /// </summary>
+    private IQueryable<Category> ApplySorting(
+        IQueryable<Category> query,
+        string? sortBy,
+        string? sortOrder)
+    {
+        var isDescending = sortOrder?.ToLower() == "desc";
+
+        return sortBy?.ToLower() switch
+        {
+            "name" => isDescending 
+                ? query.OrderByDescending(c => c.Name) 
+                : query.OrderBy(c => c.Name),
+            
+            "createdat" => isDescending 
+                ? query.OrderByDescending(c => c.CreatedAt) 
+                : query.OrderBy(c => c.CreatedAt),
+            
+            "isdefault" => isDescending 
+                ? query.OrderByDescending(c => c.IsDefault) 
+                : query.OrderBy(c => c.IsDefault),
+            
+            _ => query.OrderBy(c => c.Name) // Default: ordem alfabética
+        };
     }
 }
