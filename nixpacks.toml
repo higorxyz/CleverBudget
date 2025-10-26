@@ -3,11 +3,14 @@ cmds = [
   "curl -L https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh",
   "chmod +x dotnet-install.sh",
   "./dotnet-install.sh --channel 9.0",
-  "export PATH=$PATH:/root/.dotnet"
+  "echo 'export PATH=$PATH:/root/.dotnet' >> /root/.bashrc",
+  "export PATH=$PATH:/root/.dotnet",
+  "dotnet --info"
 ]
 
 [phases.build]
 cmds = [
+  "source /root/.bashrc",
   "dotnet --info",
   "dotnet restore",
   "dotnet publish CleverBudget.Api/CleverBudget.Api.csproj -c Release -o out"
