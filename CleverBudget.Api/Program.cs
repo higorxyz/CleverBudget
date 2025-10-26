@@ -2,14 +2,34 @@ using CleverBudget.Core.Entities;
 using CleverBudget.Infrastructure.Data;
 using CleverBudget.Core.Interfaces;
 using CleverBudget.Infrastructure.Services;
+using CleverBudget.Application.Validators;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Serilog;
 using System.Text;
 
-var builder = WebApplication.CreateBuilder(args);
+// Configurar Serilog
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(new ConfigurationBuilder()
+        .AddJsonFile("appsettings.json")
+        .Build())
+    .Enrich.FromLogContext()
+    .CreateLogger();
+
+try
+{
+    Log.Information("🚀 Iniciando CleverBudget API...");
+
+    var builder = WebApplication.CreateBuilder(args);
+
+    // Adicionar Serilog
+    builder.Host.UseSerilog();
 
 // Configuração do banco de dados (SQLite para desenvolvimento)
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -51,7 +71,29 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddControllers();
+// FluentValidation
+builder.Services.AddValidatorsFromAssemblyContaining<RegisterDtoValidator>();
+builder.Services.AddFluentValidationAutoValidation();
+
+// Controllers com configuração de respostas de erro personalizadas
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var errors = context.ModelState
+                .Where(e => e.Value?.Errors.Count > 0)
+                .SelectMany(e => e.Value!.Errors.Select(x => x.ErrorMessage))
+                .ToList();
+
+            return new BadRequestObjectResult(new
+            {
+                message = "Erro de validação",
+                errors = errors
+            });
+        };
+    });
+
 builder.Services.AddEndpointsApiExplorer();
 
 // Configuração do Swagger com autenticação JWT
@@ -107,12 +149,13 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Registrar serviços
+// Registrar serviços da aplicação
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IGoalService, GoalService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IExportService, ExportService>();
 
 var app = builder.Build();
 
@@ -129,8 +172,23 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
+
+// Adicionar Serilog para requisições HTTP
+app.UseSerilogRequestLogging();
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
+Log.Information("✅ CleverBudget API iniciada com sucesso!");
+
 app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "❌ Erro fatal ao iniciar a aplicação");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
