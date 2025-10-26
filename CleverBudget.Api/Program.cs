@@ -172,7 +172,7 @@ try
     builder.Services.AddScoped<IExportService, ExportService>();
 
     // Configuração do Data Protection para chaves persistentes
-    var keysPath = builder.Configuration["DataProtection__KeysPath"] ?? Path.GetTempPath();
+    var keysPath = builder.Configuration["DATAPROTECTION_KEYS_PATH"] ?? Path.GetTempPath();
     Log.Information($"🔑 Data Protection Keys Path: {keysPath}");
     builder.Services.AddDataProtection()
         .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
