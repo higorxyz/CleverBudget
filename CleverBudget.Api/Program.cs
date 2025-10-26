@@ -162,7 +162,8 @@ try
     builder.Services.AddScoped<ICategoryService, CategoryService>();
     builder.Services.AddScoped<IGoalService, GoalService>();
     builder.Services.AddScoped<IReportService, ReportService>();
-
+    builder.Services.AddScoped<IExportService, ExportService>();
+    
     var app = builder.Build();
 
     // **Aplicar migrations automaticamente**
