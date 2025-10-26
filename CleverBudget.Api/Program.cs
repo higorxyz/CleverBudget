@@ -158,8 +158,9 @@ try
     var app = builder.Build();
 
     // Configurar porta dinâmica do Railway
-    var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "5000"; // fallback local
     app.Urls.Add($"http://*:{port}");
+
 
     // Swagger em desenvolvimento
     if (app.Environment.IsDevelopment())
