@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["dotnet-sdk_9"]
+
+[phases.build]
+cmds = [
+  "dotnet restore",
+  "dotnet publish CleverBudget.Api/CleverBudget.Api.csproj -c Release -o out"
+]
+
+[start]
+cmd = "dotnet out/CleverBudget.Api.dll"
