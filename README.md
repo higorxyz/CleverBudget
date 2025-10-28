@@ -226,9 +226,9 @@ dotnet test /p:CollectCoverage=true
 2. Configure as variáveis de ambiente:
    - `DATABASE_URL` (PostgreSQL - fornecido automaticamente pelo Railway)
    - `JwtSettings__SecretKey`
-   - `BREVO_API_KEY`
-   - `BREVO_FROM_EMAIL` (recomendado - use um email válido)
-   - `BREVO_FROM_NAME` (recomendado - personalize o nome)
+   - `BREVO__APIKEY`
+   - `BREVO__FROMEMAIL` (recomendado - use um email válido)
+   - `BREVO__FROMNAME` (recomendado - personalize o nome)
 3. Deploy automático a cada push na `main`
 
 ---

@@ -19,7 +19,10 @@ public class EmailService : IEmailService
     {
         _configuration = configuration;
         _logger = logger;
-        _apiKey = _configuration["Brevo:ApiKey"] ?? Environment.GetEnvironmentVariable("BREVO_API_KEY") ?? "";
+        // Usa apenas BREVO__APIKEY (dois underlines)
+        _apiKey = _configuration["Brevo:ApiKey"]
+            ?? Environment.GetEnvironmentVariable("BREVO__APIKEY")
+            ?? "";
         _fromEmail = _configuration["Brevo:FromEmail"] ?? Environment.GetEnvironmentVariable("BREVO__FROMEMAIL") ?? "noreply@cleverbudget.com";
         _fromName = _configuration["Brevo:FromName"] ?? Environment.GetEnvironmentVariable("BREVO__FROMNAME") ?? "CleverBudget";
 
