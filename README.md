@@ -24,6 +24,47 @@ O **CleverBudget** é uma API REST completa para gerenciamento de finanças pess
 
 ---
 
+## 🚀 **Como Usar**
+
+### **1. Pré-requisitos**
+- .NET 9.0 SDK
+- Docker (opcional)
+- Conta Brevo (para emails)
+- Conta Railway (para deploy)
+
+### **2. Configuração Local**
+```bash
+# Clonar o repositório
+git clone <repository-url>
+cd CleverBudget
+
+# Configurar variáveis de ambiente
+# Editar .env com suas chaves
+
+# Executar migrações
+dotnet ef database update
+
+# Executar aplicação
+dotnet run --project CleverBudget.Api
+```
+
+### **3. Endpoints Principais**
+- `POST /api/auth/register` - Registrar usuário
+- `POST /api/auth/login` - Fazer login
+- `GET /api/transactions` - Listar transações
+- `POST /api/transactions` - Criar transação
+- `GET /api/reports` - Gerar relatórios
+- `GET /api/export/pdf` - Exportar PDF
+- `GET /api/export/csv` - Exportar CSV
+
+### **4. Deploy no Railway**
+```bash
+# O deploy é automático via GitHub
+# Configure as variáveis de ambiente no painel Railway
+```
+
+---
+
 ## 🛠️ Tecnologias Utilizadas
 
 | Categoria | Tecnologia |
@@ -127,25 +168,25 @@ A API utiliza **JWT Bearer Token**. Para acessar endpoints protegidos:
 
 ## 🎯 Roadmap — Linha do Tempo Visual
 
-🟢 **Fase 1 — MVP (Concluído)**
+🟢 **Fase 1 — MVP (100% Concluído)** ⭐
 - ✅ Autenticação JWT
 - ✅ CRUD de Transações
 - ✅ CRUD de Categorias
 - ✅ Sistema de Metas
 - ✅ Relatórios Financeiros
 
-🔵 **Fase 2 — Recursos Avançados (Em andamento)**
-- ⬜ Exportação PDF/CSV
-- ⬜ Notificações por Email (SendGrid)
+🔵 **Fase 2 — Recursos Avançados (~60% Concluído)**
+- ✅ Exportação PDF/CSV
+- ✅ Notificações por Email (Brevo)
 - ⬜ Transações Recorrentes
 - ⬜ Orçamentos Mensais com alertas
 - ⬜ Perfil de Usuário (nome, email, senha, foto)
-- ⬜ Validações com FluentValidation
+- ✅ Validações com FluentValidation
 - ⬜ Testes unitários (70%+ cobertura)
 - ⬜ Rate Limiting
-- ⬜ Deploy no Railway
+- ✅ Deploy no Railway
 
-🟡 **Fase 3 — Inteligência e SaaS (Próximo)**
+🟡 **Fase 3 — Inteligência e SaaS (Planejado)**
 - ⬜ Insights financeiros automáticos
 - ⬜ Previsão de gastos
 - ⬜ Gamificação (conquistas/níveis)
@@ -183,14 +224,11 @@ dotnet test /p:CollectCoverage=true
 
 1. Conecte seu repositório GitHub ao Railway
 2. Configure as variáveis de ambiente:
-   - `ConnectionStrings__DefaultConnection`
-   - `JwtSettings__SecretKey`
-   - `JwtSettings__Issuer`
-   - `JwtSettings__Audience`
-   - `JwtSettings__ExpirationMinutes`
-   - `SendGrid__ApiKey`
-   - `SendGrid__FromEmail`
-   - `SendGrid__FromName`
+   - `DATABASE_URL` (PostgreSQL - fornecido automaticamente pelo Railway)
+   - `JWT_SECRET_KEY`
+   - `BREVO_API_KEY`
+   - `BREVO_FROM_EMAIL` (recomendado - use um email válido)
+   - `BREVO_FROM_NAME` (recomendado - personalize o nome)
 3. Deploy automático a cada push na `main`
 
 ---

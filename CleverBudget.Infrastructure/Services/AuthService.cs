@@ -4,6 +4,7 @@ using CleverBudget.Core.Interfaces;
 using CleverBudget.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -16,12 +17,21 @@ public class AuthService : IAuthService
     private readonly UserManager<User> _userManager;
     private readonly IConfiguration _configuration;
     private readonly AppDbContext _context;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(UserManager<User> userManager, IConfiguration configuration, AppDbContext context)
+    public AuthService(
+        UserManager<User> userManager, 
+        IConfiguration configuration, 
+        AppDbContext context,
+        IEmailService emailService,
+        ILogger<AuthService> logger)
     {
         _userManager = userManager;
         _configuration = configuration;
         _context = context;
+        _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task<AuthResponseDto?> RegisterAsync(RegisterDto registerDto)
@@ -48,6 +58,20 @@ public class AuthService : IAuthService
             return null;
 
         await CreateDefaultCategoriesAsync(user.Id);
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var fullName = $"{user.FirstName} {user.LastName}";
+                await _emailService.SendWelcomeEmailAsync(user.Email!, fullName);
+                _logger.LogInformation($"📧 Email de boas-vindas enviado para {user.Email}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"❌ Erro ao enviar email de boas-vindas para {user.Email}");
+            }
+        });
 
         return GenerateAuthResponse(user);
     }

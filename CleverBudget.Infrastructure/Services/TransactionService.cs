@@ -64,9 +64,6 @@ public class TransactionService : ITransactionService
         return await pagedQuery.ToPagedResultAsync(paginationParams);
     }
 
-    /// <summary>
-    /// Método ORIGINAL mantido para compatibilidade
-    /// </summary>
     public async Task<IEnumerable<TransactionResponseDto>> GetAllAsync(
         string userId, 
         TransactionType? type = null, 
@@ -209,9 +206,6 @@ public class TransactionService : ITransactionService
         return true;
     }
 
-    /// <summary>
-    /// Aplica ordenação dinâmica baseada nos parâmetros
-    /// </summary>
     private IQueryable<Transaction> ApplySorting(
         IQueryable<Transaction> query,
         string? sortBy,

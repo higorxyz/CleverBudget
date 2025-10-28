@@ -13,7 +13,6 @@ public class Transaction
     public DateTime Date { get; set; }
     public DateTime CreatedAt { get; set; }
     
-    // Relacionamentos
     public User User { get; set; } = null!;
     public Category Category { get; set; } = null!;
 }

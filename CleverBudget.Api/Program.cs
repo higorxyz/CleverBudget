@@ -18,6 +18,9 @@ using Microsoft.AspNetCore.DataProtection;
 using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using QuestPDF.Infrastructure;
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(new ConfigurationBuilder()
@@ -26,26 +29,74 @@ Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .CreateLogger();
 
-
 try
 {
     Log.Information("🚀 Iniciando CleverBudget API...");
 
-    DotNetEnv.Env.Load();
+    var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", ".env");
+    if (!File.Exists(envPath))
+    {
+        envPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".env");
+    }
+
+    if (File.Exists(envPath))
+    {
+        DotNetEnv.Env.Load(envPath);
+        Log.Information("✅ Arquivo .env carregado com sucesso");
+    }
+    else
+    {
+        Log.Warning($"⚠️ Arquivo .env não encontrado em: {envPath}");
+    }
 
     var builder = WebApplication.CreateBuilder(args);
+
+    builder.Configuration.AddEnvironmentVariables();
+
+    if (builder.Environment.IsDevelopment())
+    {
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("JWT_SECRET_KEY")))
+        {
+            Log.Warning("⚠️ JWT_SECRET_KEY não definida! Configure no arquivo .env");
+        }
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BREVO_API_KEY")))
+        {
+            Log.Warning("⚠️ BREVO_API_KEY não definida! Configure no arquivo .env");
+        }
+    }
 
     builder.Host.UseSerilog();
 
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    if (connectionString != null && connectionString.StartsWith("postgresql://"))
+    var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+
+    if (builder.Environment.IsProduction() || !string.IsNullOrEmpty(databaseUrl))
     {
-        var uri = new Uri(connectionString);
-        var userInfo = uri.UserInfo.Split(':');
-        connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]}";
+        var pgConnectionString = databaseUrl ?? connectionString;
+        
+        if (pgConnectionString != null && pgConnectionString.StartsWith("postgresql://"))
+        {
+            var uri = new Uri(pgConnectionString);
+            var userInfo = uri.UserInfo.Split(':');
+            pgConnectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+        }
+
+        builder.Services.AddDbContext<AppDbContext>(options =>
+            options.UseNpgsql(pgConnectionString));
+        
+        Log.Information("🗄️ Usando PostgreSQL (Produção)");
+        Log.Information($"🔍 Connection string: Host={new Uri(databaseUrl ?? "postgresql://localhost").Host}");
     }
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(connectionString));
+    else
+    {
+        var sqliteConnectionString = connectionString ?? "Data Source=cleverbudget.db";
+        
+        builder.Services.AddDbContext<AppDbContext>(options =>
+            options.UseSqlite(sqliteConnectionString));
+        
+        Log.Information("🗄️ Usando SQLite (Desenvolvimento)");
+        Log.Information($"🔍 Connection string: {sqliteConnectionString}");
+    }
 
     builder.Services.AddIdentity<User, IdentityRole>(options =>
     {
@@ -60,7 +111,13 @@ try
     .AddDefaultTokenProviders();
 
     var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-    var secretKey = jwtSettings["SecretKey"];
+    var secretKey = jwtSettings["SecretKey"] ?? Environment.GetEnvironmentVariable("JWT_SECRET_KEY");
+
+    if (string.IsNullOrEmpty(secretKey))
+    {
+        Log.Warning("⚠️ JWT SecretKey não configurada! Usando chave temporária (NÃO USE EM PRODUÇÃO)");
+        secretKey = "ChaveTemporariaParaDesenvolvimento_NaoUseEmProducao_MinimoDe32Caracteres!";
+    }
 
     builder.Services.AddAuthentication(options =>
     {
@@ -77,7 +134,7 @@ try
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings["Issuer"],
             ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
         };
     });
 
@@ -113,8 +170,7 @@ try
             Description = "API para controle financeiro inteligente",
             Contact = new OpenApiContact
             {
-                Name = "CleverBudget API Developer",
-                Email = "dev.higorxyz@gmail.com"
+                Name = "CleverBudget API"
             }
         });
 
@@ -160,25 +216,47 @@ try
     builder.Services.AddScoped<IGoalService, GoalService>();
     builder.Services.AddScoped<IReportService, ReportService>();
     builder.Services.AddScoped<IExportService, ExportService>();
+    builder.Services.AddScoped<IEmailService, EmailService>();
 
-    var keysPath = builder.Configuration["DATAPROTECTION_KEYS_PATH"] ?? Path.GetTempPath();
+    var keysPath = Path.Combine(Directory.GetCurrentDirectory(), "DataProtection-Keys");
+    
+    if (!Directory.Exists(keysPath))
+    {
+        Directory.CreateDirectory(keysPath);
+    }
+
     Log.Information($"🔑 Data Protection Keys Path: {keysPath}");
 
-    var rsa = RSA.Create(2048);
-    var certRequest = new CertificateRequest("CN=CleverBudget", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-    var cert = certRequest.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddYears(1));
+    if (builder.Environment.IsProduction())
+    {
+        var rsa = RSA.Create(2048);
+        var certRequest = new CertificateRequest("CN=CleverBudget", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        var cert = certRequest.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddYears(1));
 
-    builder.Services.AddDataProtection()
-        .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
-        .ProtectKeysWithCertificate(cert);
+        builder.Services.AddDataProtection()
+            .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
+            .ProtectKeysWithCertificate(cert);
+    }
+    else
+    {
+        builder.Services.AddDataProtection()
+            .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
+            .SetApplicationName("CleverBudget")
+            .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
+        
+        Log.Information("⚙️ Data Protection configurado para desenvolvimento (chaves não criptografadas)");
+    }
 
     var app = builder.Build();
 
-    using (var scope = app.Services.CreateScope())
+    if (!builder.Environment.EnvironmentName.Equals("Design", StringComparison.OrdinalIgnoreCase))
     {
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        Log.Information($"🔍 Connection string: {connectionString}");
-        db.Database.Migrate();
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Database.Migrate();
+            Log.Information("✅ Migrations aplicadas com sucesso!");
+        }
     }
 
     app.UseSwagger();

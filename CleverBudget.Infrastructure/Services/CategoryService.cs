@@ -27,10 +27,8 @@ public class CategoryService : ICategoryService
         var query = _context.Categories
             .Where(c => c.UserId == userId);
 
-        // Aplicar ordenação
         query = ApplySorting(query, paginationParams.SortBy, paginationParams.SortOrder);
 
-        // Projeção e paginação
         var pagedQuery = query.Select(c => new CategoryResponseDto
         {
             Id = c.Id,
@@ -44,9 +42,6 @@ public class CategoryService : ICategoryService
         return await pagedQuery.ToPagedResultAsync(paginationParams);
     }
 
-    /// <summary>
-    /// Método ORIGINAL mantido
-    /// </summary>
     public async Task<IEnumerable<CategoryResponseDto>> GetAllAsync(string userId)
     {
         var categories = await _context.Categories
@@ -163,9 +158,6 @@ public class CategoryService : ICategoryService
         return true;
     }
 
-    /// <summary>
-    /// Aplica ordenação dinâmica
-    /// </summary>
     private IQueryable<Category> ApplySorting(
         IQueryable<Category> query,
         string? sortBy,

@@ -18,9 +18,6 @@ public class GoalService : IGoalService
         _context = context;
     }
 
-    /// <summary>
-    /// Método NOVO com paginação
-    /// </summary>
     public async Task<PagedResult<GoalResponseDto>> GetPagedAsync(
         string userId, 
         PaginationParams paginationParams,
@@ -37,10 +34,8 @@ public class GoalService : IGoalService
         if (year.HasValue)
             query = query.Where(g => g.Year == year.Value);
 
-        // Aplicar ordenação
         query = ApplySorting(query, paginationParams.SortBy, paginationParams.SortOrder);
 
-        // Projeção e paginação
         var pagedQuery = query.Select(g => new GoalResponseDto
         {
             Id = g.Id,
@@ -57,9 +52,6 @@ public class GoalService : IGoalService
         return await pagedQuery.ToPagedResultAsync(paginationParams);
     }
 
-    /// <summary>
-    /// Método ORIGINAL mantido
-    /// </summary>
     public async Task<IEnumerable<GoalResponseDto>> GetAllAsync(string userId, int? month = null, int? year = null)
     {
         var query = _context.Goals
@@ -231,9 +223,6 @@ public class GoalService : IGoalService
         return goalsStatus.OrderByDescending(g => g.Percentage);
     }
 
-    /// <summary>
-    /// Aplica ordenação dinâmica
-    /// </summary>
     private IQueryable<Goal> ApplySorting(
         IQueryable<Goal> query,
         string? sortBy,
