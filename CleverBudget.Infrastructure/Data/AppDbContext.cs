@@ -40,6 +40,7 @@ public class AppDbContext : IdentityDbContext<User>
             else
             {
                 entity.Property(t => t.CreatedAt).HasDefaultValueSql("NOW()");
+                entity.Property(t => t.Date).HasColumnType("timestamp");
             }
             
             entity.HasOne(t => t.User)
