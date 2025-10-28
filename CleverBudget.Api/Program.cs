@@ -259,7 +259,8 @@ try
     builder.Services.AddScoped<IExportService, ExportService>();
     builder.Services.AddScoped<IEmailService, EmailService>();
 
-    var keysPath = Path.Combine(Directory.GetCurrentDirectory(), "DataProtection-Keys");
+    var keysPath = Environment.GetEnvironmentVariable("DATAPROTECTION_KEYS_PATH") 
+        ?? Path.Combine(Directory.GetCurrentDirectory(), "DataProtection-Keys");
     
     if (!Directory.Exists(keysPath))
     {
