@@ -56,7 +56,6 @@ try
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 
-    // Railway pode fornecer ConnectionStrings__DefaultConnection diretamente
     var railwayConnectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
     if (!string.IsNullOrEmpty(railwayConnectionString))
     {
@@ -137,7 +136,7 @@ try
     .AddDefaultTokenProviders();
 
     var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-    var secretKey = jwtSettings["SecretKey"] ?? Environment.GetEnvironmentVariable("JWT_SECRET_KEY");
+    var secretKey = jwtSettings["SecretKey"] ?? builder.Configuration["JWT_SECRET_KEY"];
 
     if (string.IsNullOrEmpty(secretKey))
     {
