@@ -316,8 +316,15 @@ try
                         if (pendingMigrations.Any())
                         {
                             Log.Information("🔄 Aplicando migrations pendentes...");
-                            db.Database.Migrate();
-                            Log.Information("✅ Migrations aplicadas com sucesso!");
+                            try
+                            {
+                                db.Database.Migrate();
+                                Log.Information("✅ Migrations aplicadas com sucesso!");
+                            }
+                            catch (Exception migrateEx)
+                            {
+                                Log.Warning(migrateEx, "⚠️ Erro ao aplicar migrations, assumindo que o banco já está configurado: {Message}", migrateEx.Message);
+                            }
                         }
                         else
                         {
@@ -328,8 +335,15 @@ try
                     {
                         // Banco vazio, aplicar todas as migrations
                         Log.Information("🆕 Banco vazio detectado. Aplicando todas as migrations...");
-                        db.Database.Migrate();
-                        Log.Information("✅ Banco inicializado e migrations aplicadas!");
+                        try
+                        {
+                            db.Database.Migrate();
+                            Log.Information("✅ Banco inicializado e migrations aplicadas!");
+                        }
+                        catch (Exception migrateEx)
+                        {
+                            Log.Warning(migrateEx, "⚠️ Erro ao aplicar migrations no banco vazio: {Message}", migrateEx.Message);
+                        }
                     }
                 }
                 else
