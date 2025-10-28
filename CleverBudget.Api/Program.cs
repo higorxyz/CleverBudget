@@ -72,6 +72,9 @@ try
 
     if (builder.Environment.IsProduction() || !string.IsNullOrEmpty(databaseUrl))
     {
+        Log.Information($"🔍 Ambiente: {builder.Environment.EnvironmentName}");
+        Log.Information($"🔍 DATABASE_URL presente: {!string.IsNullOrEmpty(databaseUrl)}");
+
         var pgConnectionString = databaseUrl ?? connectionString;
         
         if (pgConnectionString != null && pgConnectionString.StartsWith("postgresql://"))
@@ -85,7 +88,7 @@ try
             options.UseNpgsql(pgConnectionString));
         
         Log.Information("🗄️ Usando PostgreSQL (Produção)");
-        Log.Information($"🔍 Connection string: Host={new Uri(databaseUrl ?? "postgresql://localhost").Host}");
+        Log.Information($"🔍 Connection string: Host={new Uri(databaseUrl ?? "postgresql://localhost").Host};Port={new Uri(databaseUrl ?? "postgresql://localhost").Port};Database={new Uri(databaseUrl ?? "postgresql://localhost").AbsolutePath.TrimStart('/')}");
     }
     else
     {
@@ -254,8 +257,35 @@ try
         using (var scope = app.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            db.Database.Migrate();
-            Log.Information("✅ Migrations aplicadas com sucesso!");
+            try
+            {
+                // Verifica se o banco já tem as tabelas antes de executar migrations
+                var canConnect = db.Database.CanConnect();
+                if (canConnect)
+                {
+                    // Tenta aplicar migrations apenas se necessário
+                    var pendingMigrations = db.Database.GetPendingMigrations();
+                    if (pendingMigrations.Any())
+                    {
+                        db.Database.Migrate();
+                        Log.Information("✅ Migrations aplicadas com sucesso!");
+                    }
+                    else
+                    {
+                        Log.Information("✅ Banco de dados já está atualizado!");
+                    }
+                }
+                else
+                {
+                    // Se não consegue conectar, tenta criar o banco
+                    db.Database.Migrate();
+                    Log.Information("✅ Banco de dados criado e migrations aplicadas!");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "⚠️ Erro ao verificar/aplicar migrations. Continuando sem migrations.");
+            }
         }
     }
 
