@@ -70,10 +70,22 @@ try
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 
+    // Railway pode fornecer ConnectionStrings__DefaultConnection diretamente
+    var railwayConnectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+    if (!string.IsNullOrEmpty(railwayConnectionString))
+    {
+        databaseUrl = railwayConnectionString;
+        Log.Information("🔍 Usando ConnectionStrings__DefaultConnection do Railway");
+    }
+
     if (builder.Environment.IsProduction() || !string.IsNullOrEmpty(databaseUrl))
     {
         Log.Information($"🔍 Ambiente: {builder.Environment.EnvironmentName}");
         Log.Information($"🔍 DATABASE_URL presente: {!string.IsNullOrEmpty(databaseUrl)}");
+        if (!string.IsNullOrEmpty(databaseUrl))
+        {
+            Log.Information($"🔍 Database URL: {databaseUrl.Substring(0, Math.Min(50, databaseUrl.Length))}...");
+        }
 
         string finalConnectionString;
 
