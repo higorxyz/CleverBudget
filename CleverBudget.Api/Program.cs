@@ -33,23 +33,26 @@ try
 {
     Log.Information("🚀 Iniciando CleverBudget API...");
 
-    var envPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".env");
-    if (!File.Exists(envPath))
-    {
-        envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
-    }
-
-    if (File.Exists(envPath))
-    {
-        DotNetEnv.Env.Load(envPath);
-        Log.Information("✅ Arquivo .env carregado com sucesso");
-    }
-    else
-    {
-        Log.Warning($"⚠️ Arquivo .env não encontrado em: {envPath}");
-    }
-
     var builder = WebApplication.CreateBuilder(args);
+
+    if (!builder.Environment.IsProduction())
+    {
+        var envPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".env");
+        if (!File.Exists(envPath))
+        {
+            envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+        }
+
+        if (File.Exists(envPath))
+        {
+            DotNetEnv.Env.Load(envPath);
+            Log.Information("✅ Arquivo .env carregado com sucesso");
+        }
+        else
+        {
+            Log.Warning($"⚠️ Arquivo .env não encontrado em: {envPath}");
+        }
+    }
 
     var port = Environment.GetEnvironmentVariable("PORT");
     if (!string.IsNullOrEmpty(port))

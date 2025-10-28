@@ -116,7 +116,7 @@ dotnet ef database update --project CleverBudget.Infrastructure --startup-projec
 dotnet run --project CleverBudget.Api
 ```
 
-**Para desenvolvimento local:** As configurações sensíveis estão no arquivo `.env` na raiz do projeto. Certifique-se de que o arquivo existe e contém as chaves corretas. O aplicativo carrega automaticamente as variáveis de ambiente do `.env`.
+**Para desenvolvimento local:** As configurações sensíveis estão no arquivo `.env` na raiz do projeto. Certifique-se de que o arquivo existe e contém as chaves corretas. O aplicativo carrega automaticamente as variáveis de ambiente do `.env` **apenas em desenvolvimento local**. **Em produção (Railway), as variáveis são lidas do painel e o `.env` não é utilizado.**
 
 A API estará disponível em: **http://localhost:5000**
 
@@ -225,7 +225,7 @@ dotnet test /p:CollectCoverage=true
 1. Conecte seu repositório GitHub ao Railway
 2. Configure as variáveis de ambiente:
    - `DATABASE_URL` (PostgreSQL - fornecido automaticamente pelo Railway)
-   - `JWT_SECRET_KEY`
+   - `JwtSettings__SecretKey`
    - `BREVO_API_KEY`
    - `BREVO_FROM_EMAIL` (recomendado - use um email válido)
    - `BREVO_FROM_NAME` (recomendado - personalize o nome)
