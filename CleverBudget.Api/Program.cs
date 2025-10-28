@@ -51,6 +51,13 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
+    var port = Environment.GetEnvironmentVariable("PORT");
+    if (!string.IsNullOrEmpty(port))
+    {
+        builder.WebHost.UseUrls($"http://*:{port}");
+        Log.Information($"👂 Ouvindo na porta: {port}");
+    }
+
     builder.Host.UseSerilog();
 
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -136,7 +143,7 @@ try
     .AddDefaultTokenProviders();
 
     var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-    var secretKey = jwtSettings["SecretKey"] ?? builder.Configuration["JWT_SECRET_KEY"];
+    var secretKey = jwtSettings["SecretKey"] ?? Environment.GetEnvironmentVariable("JWT_SECRET_KEY");
 
     if (string.IsNullOrEmpty(secretKey))
     {
