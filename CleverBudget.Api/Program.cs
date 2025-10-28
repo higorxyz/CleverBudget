@@ -33,10 +33,10 @@ try
 {
     Log.Information("🚀 Iniciando CleverBudget API...");
 
-    var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", ".env");
+    var envPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".env");
     if (!File.Exists(envPath))
     {
-        envPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".env");
+        envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
     }
 
     if (File.Exists(envPath))
@@ -51,20 +51,6 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
-    builder.Configuration.AddEnvironmentVariables();
-
-    if (builder.Environment.IsDevelopment())
-    {
-        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("JWT_SECRET_KEY")))
-        {
-            Log.Warning("⚠️ JWT_SECRET_KEY não definida! Configure no arquivo .env");
-        }
-        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BREVO_API_KEY")))
-        {
-            Log.Warning("⚠️ BREVO_API_KEY não definida! Configure no arquivo .env");
-        }
-    }
-
     builder.Host.UseSerilog();
 
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -78,7 +64,7 @@ try
         Log.Information("🔍 Usando ConnectionStrings__DefaultConnection do Railway");
     }
 
-    if (builder.Environment.IsProduction() || !string.IsNullOrEmpty(databaseUrl))
+    if (builder.Environment.IsProduction())
     {
         Log.Information($"🔍 Ambiente: {builder.Environment.EnvironmentName}");
         Log.Information($"🔍 DATABASE_URL presente: {!string.IsNullOrEmpty(databaseUrl)}");
@@ -91,7 +77,6 @@ try
 
         if (!string.IsNullOrEmpty(databaseUrl) && databaseUrl.StartsWith("postgresql://"))
         {
-            // Usa DATABASE_URL se disponível
             var uri = new Uri(databaseUrl);
             var userInfo = uri.UserInfo.Split(':');
             finalConnectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
@@ -101,7 +86,6 @@ try
         }
         else
         {
-            // Tenta construir connection string a partir de variáveis individuais do Railway
             var pgHost = Environment.GetEnvironmentVariable("PGHOST");
             var pgPort = Environment.GetEnvironmentVariable("PGPORT");
             var pgDatabase = Environment.GetEnvironmentVariable("PGDATABASE");
@@ -139,7 +123,8 @@ try
 
         Log.Information("🗄️ Usando SQLite (Desenvolvimento)");
         Log.Information($"🔍 Connection string: {sqliteConnectionString}");
-    }    builder.Services.AddIdentity<User, IdentityRole>(options =>
+    }
+    builder.Services.AddIdentity<User, IdentityRole>(options =>
     {
         options.Password.RequireDigit = true;
         options.Password.RequiredLength = 6;
@@ -298,19 +283,25 @@ try
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             try
             {
-                // Verifica se consegue conectar ao banco
                 var canConnect = db.Database.CanConnect();
                 Log.Information($"🔍 Conexão com banco: {(canConnect ? "OK" : "FALHA")}");
 
                 if (canConnect)
                 {
-                    // Verifica se o banco já tem tabelas (foi inicializado anteriormente)
-                    var hasTables = db.Database.SqlQueryRaw<int>("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'").ToList().FirstOrDefault() > 0;
+                    string tableCheckQuery;
+                    if (builder.Environment.IsProduction())
+                    {
+                        tableCheckQuery = "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'";
+                    }
+                    else
+                    {
+                        tableCheckQuery = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'";
+                    }
+                    var hasTables = db.Database.SqlQueryRaw<int>(tableCheckQuery).ToList().FirstOrDefault() > 0;
                     Log.Information($"🔍 Banco já tem tabelas: {(hasTables ? "SIM" : "NÃO")}");
 
                     if (hasTables)
                     {
-                        // Banco já foi inicializado, verifica se precisa de migrations
                         var pendingMigrations = db.Database.GetPendingMigrations().ToList();
                         Log.Information($"🔍 Migrations pendentes: {pendingMigrations.Count}");
 
@@ -334,7 +325,6 @@ try
                     }
                     else
                     {
-                        // Banco vazio, aplicar todas as migrations
                         Log.Information("🆕 Banco vazio detectado. Aplicando todas as migrations...");
                         try
                         {
