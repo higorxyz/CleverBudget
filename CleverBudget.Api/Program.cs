@@ -303,28 +303,57 @@ try
 
                 if (canConnect)
                 {
-                    // Tenta aplicar migrations apenas se necessário
-                    var pendingMigrations = db.Database.GetPendingMigrations().ToList();
-                    Log.Information($"🔍 Migrations pendentes: {pendingMigrations.Count}");
+                    // Verifica se o banco já tem tabelas (foi inicializado anteriormente)
+                    var hasTables = db.Database.SqlQueryRaw<int>("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'").ToList().FirstOrDefault() > 0;
+                    Log.Information($"🔍 Banco já tem tabelas: {(hasTables ? "SIM" : "NÃO")}");
 
-                    if (pendingMigrations.Any())
+                    if (hasTables)
                     {
-                        db.Database.Migrate();
-                        Log.Information("✅ Migrations aplicadas com sucesso!");
+                        // Banco já foi inicializado, verifica se precisa de migrations
+                        var pendingMigrations = db.Database.GetPendingMigrations().ToList();
+                        Log.Information($"🔍 Migrations pendentes: {pendingMigrations.Count}");
+
+                        if (pendingMigrations.Any())
+                        {
+                            Log.Information("🔄 Aplicando migrations pendentes...");
+                            db.Database.Migrate();
+                            Log.Information("✅ Migrations aplicadas com sucesso!");
+                        }
+                        else
+                        {
+                            Log.Information("✅ Banco de dados já está atualizado!");
+                        }
                     }
                     else
                     {
-                        Log.Information("✅ Banco de dados já está atualizado!");
+                        // Banco vazio, aplicar todas as migrations
+                        Log.Information("🆕 Banco vazio detectado. Aplicando todas as migrations...");
+                        db.Database.Migrate();
+                        Log.Information("✅ Banco inicializado e migrations aplicadas!");
                     }
                 }
                 else
                 {
-                    Log.Warning("⚠️ Não foi possível conectar ao banco. Pulando migrations.");
+                    Log.Warning("⚠️ Não foi possível conectar ao banco. Verificando se é desenvolvimento...");
+                    if (!builder.Environment.IsProduction())
+                    {
+                        Log.Information("🏠 Ambiente de desenvolvimento - continuando sem banco");
+                    }
+                    else
+                    {
+                        Log.Error("❌ ERRO: Não foi possível conectar ao banco em produção!");
+                        throw new InvalidOperationException("Falha na conexão com o banco de dados PostgreSQL");
+                    }
                 }
+            }
+            catch (Exception ex) when (!builder.Environment.IsProduction())
+            {
+                Log.Warning(ex, "⚠️ Erro ao configurar banco em desenvolvimento. Continuando...");
             }
             catch (Exception ex)
             {
-                Log.Warning(ex, "⚠️ Erro ao verificar/aplicar migrations. Continuando sem migrations.");
+                Log.Error(ex, "❌ Erro crítico ao configurar banco em produção");
+                throw;
             }
         }
     }
