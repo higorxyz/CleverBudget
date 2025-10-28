@@ -76,27 +76,42 @@ try
         Log.Information($"🔍 DATABASE_URL presente: {!string.IsNullOrEmpty(databaseUrl)}");
 
         var pgConnectionString = databaseUrl ?? connectionString;
-        
-        if (pgConnectionString != null && pgConnectionString.StartsWith("postgresql://"))
-        {
-            var uri = new Uri(pgConnectionString);
-            var userInfo = uri.UserInfo.Split(':');
-            pgConnectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
-        }
 
-        builder.Services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(pgConnectionString));
-        
-        Log.Information("🗄️ Usando PostgreSQL (Produção)");
-        Log.Information($"🔍 Connection string: Host={new Uri(databaseUrl ?? "postgresql://localhost").Host};Port={new Uri(databaseUrl ?? "postgresql://localhost").Port};Database={new Uri(databaseUrl ?? "postgresql://localhost").AbsolutePath.TrimStart('/')}");
+        // Se não temos uma DATABASE_URL válida, usar SQLite mesmo em produção
+        if (string.IsNullOrEmpty(databaseUrl) || string.IsNullOrEmpty(pgConnectionString) || !pgConnectionString.StartsWith("postgresql://"))
+        {
+            Log.Warning("⚠️ DATABASE_URL não configurada ou inválida. Usando SQLite como fallback em produção.");
+            var sqliteConnectionString = connectionString ?? "Data Source=cleverbudget.db";
+
+            builder.Services.AddDbContext<AppDbContext>(options =>
+                options.UseSqlite(sqliteConnectionString));
+
+            Log.Information("🗄️ Usando SQLite (Fallback para produção)");
+            Log.Information($"🔍 Connection string: {sqliteConnectionString}");
+        }
+        else
+        {
+            if (pgConnectionString.StartsWith("postgresql://"))
+            {
+                var uri = new Uri(pgConnectionString);
+                var userInfo = uri.UserInfo.Split(':');
+                pgConnectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+            }
+
+            builder.Services.AddDbContext<AppDbContext>(options =>
+                options.UseNpgsql(pgConnectionString));
+
+            Log.Information("🗄️ Usando PostgreSQL (Produção)");
+            Log.Information($"🔍 Connection string: Host={new Uri(databaseUrl).Host};Port={new Uri(databaseUrl).Port};Database={new Uri(databaseUrl).AbsolutePath.TrimStart('/')}");
+        }
     }
     else
     {
         var sqliteConnectionString = connectionString ?? "Data Source=cleverbudget.db";
-        
+
         builder.Services.AddDbContext<AppDbContext>(options =>
             options.UseSqlite(sqliteConnectionString));
-        
+
         Log.Information("🗄️ Usando SQLite (Desenvolvimento)");
         Log.Information($"🔍 Connection string: {sqliteConnectionString}");
     }
@@ -259,12 +274,16 @@ try
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             try
             {
-                // Verifica se o banco já tem as tabelas antes de executar migrations
+                // Verifica se consegue conectar ao banco
                 var canConnect = db.Database.CanConnect();
+                Log.Information($"🔍 Conexão com banco: {(canConnect ? "OK" : "FALHA")}");
+
                 if (canConnect)
                 {
                     // Tenta aplicar migrations apenas se necessário
-                    var pendingMigrations = db.Database.GetPendingMigrations();
+                    var pendingMigrations = db.Database.GetPendingMigrations().ToList();
+                    Log.Information($"🔍 Migrations pendentes: {pendingMigrations.Count}");
+
                     if (pendingMigrations.Any())
                     {
                         db.Database.Migrate();
@@ -277,9 +296,7 @@ try
                 }
                 else
                 {
-                    // Se não consegue conectar, tenta criar o banco
-                    db.Database.Migrate();
-                    Log.Information("✅ Banco de dados criado e migrations aplicadas!");
+                    Log.Warning("⚠️ Não foi possível conectar ao banco. Pulando migrations.");
                 }
             }
             catch (Exception ex)
