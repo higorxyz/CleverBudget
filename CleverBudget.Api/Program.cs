@@ -75,35 +75,48 @@ try
         Log.Information($"🔍 Ambiente: {builder.Environment.EnvironmentName}");
         Log.Information($"🔍 DATABASE_URL presente: {!string.IsNullOrEmpty(databaseUrl)}");
 
-        var pgConnectionString = databaseUrl ?? connectionString;
+        string finalConnectionString;
 
-        // Se não temos uma DATABASE_URL válida, usar SQLite mesmo em produção
-        if (string.IsNullOrEmpty(databaseUrl) || string.IsNullOrEmpty(pgConnectionString) || !pgConnectionString.StartsWith("postgresql://"))
+        if (!string.IsNullOrEmpty(databaseUrl) && databaseUrl.StartsWith("postgresql://"))
         {
-            Log.Warning("⚠️ DATABASE_URL não configurada ou inválida. Usando SQLite como fallback em produção.");
-            var sqliteConnectionString = connectionString ?? "Data Source=cleverbudget.db";
+            // Usa DATABASE_URL se disponível
+            var uri = new Uri(databaseUrl);
+            var userInfo = uri.UserInfo.Split(':');
+            finalConnectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
 
-            builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlite(sqliteConnectionString));
-
-            Log.Information("🗄️ Usando SQLite (Fallback para produção)");
-            Log.Information($"🔍 Connection string: {sqliteConnectionString}");
+            Log.Information("🗄️ Usando PostgreSQL via DATABASE_URL");
+            Log.Information($"🔍 Connection string: Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')}");
         }
         else
         {
-            if (pgConnectionString.StartsWith("postgresql://"))
+            // Tenta construir connection string a partir de variáveis individuais do Railway
+            var pgHost = Environment.GetEnvironmentVariable("PGHOST");
+            var pgPort = Environment.GetEnvironmentVariable("PGPORT");
+            var pgDatabase = Environment.GetEnvironmentVariable("PGDATABASE");
+            var pgUser = Environment.GetEnvironmentVariable("PGUSER");
+            var pgPassword = Environment.GetEnvironmentVariable("PGPASSWORD");
+
+            Log.Information($"🔍 PGHOST: {pgHost}");
+            Log.Information($"🔍 PGPORT: {pgPort}");
+            Log.Information($"🔍 PGDATABASE: {pgDatabase}");
+            Log.Information($"🔍 PGUSER: {pgUser}");
+            Log.Information($"🔍 PGPASSWORD presente: {!string.IsNullOrEmpty(pgPassword)}");
+
+            if (!string.IsNullOrEmpty(pgHost) && !string.IsNullOrEmpty(pgDatabase) && !string.IsNullOrEmpty(pgUser) && !string.IsNullOrEmpty(pgPassword))
             {
-                var uri = new Uri(pgConnectionString);
-                var userInfo = uri.UserInfo.Split(':');
-                pgConnectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+                finalConnectionString = $"Host={pgHost};Port={pgPort ?? "5432"};Database={pgDatabase};Username={pgUser};Password={pgPassword};SSL Mode=Require;Trust Server Certificate=true";
+
+                Log.Information("🗄️ Usando PostgreSQL via variáveis individuais");
+                Log.Information($"🔍 Connection string: Host={pgHost};Port={pgPort ?? "5432"};Database={pgDatabase}");
             }
-
-            builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql(pgConnectionString));
-
-            Log.Information("🗄️ Usando PostgreSQL (Produção)");
-            Log.Information($"🔍 Connection string: Host={new Uri(databaseUrl).Host};Port={new Uri(databaseUrl).Port};Database={new Uri(databaseUrl).AbsolutePath.TrimStart('/')}");
+            else
+            {
+                throw new InvalidOperationException("❌ ERRO: PostgreSQL é obrigatório em produção! Configure DATABASE_URL ou as variáveis PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD no Railway.");
+            }
         }
+
+        builder.Services.AddDbContext<AppDbContext>(options =>
+            options.UseNpgsql(finalConnectionString));
     }
     else
     {
@@ -114,9 +127,7 @@ try
 
         Log.Information("🗄️ Usando SQLite (Desenvolvimento)");
         Log.Information($"🔍 Connection string: {sqliteConnectionString}");
-    }
-
-    builder.Services.AddIdentity<User, IdentityRole>(options =>
+    }    builder.Services.AddIdentity<User, IdentityRole>(options =>
     {
         options.Password.RequireDigit = true;
         options.Password.RequiredLength = 6;
