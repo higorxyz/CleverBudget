@@ -186,7 +186,7 @@ public class EmailService : IEmailService
     {
         if (string.IsNullOrEmpty(_apiKey))
         {
-            _logger.LogWarning("Email não enviado: API Key do Brevo não configurada");
+            _logger.LogWarning("⚠️ Brevo API Key não configurada! Emails não serão enviados.");
             return false;
         }
 

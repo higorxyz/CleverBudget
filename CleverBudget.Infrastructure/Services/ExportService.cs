@@ -403,7 +403,7 @@ public class ExportService : IExportService
                             string statusText = goal.Status;
                             decimal currentAmount = goal.CurrentAmount;
                             decimal targetAmount = goal.TargetAmount;
-                            double percentage = goal.Percentage;
+                            decimal percentage = goal.Percentage;
 
                             col.Item().Row(row =>
                             {
@@ -421,14 +421,14 @@ public class ExportService : IExportService
                             {
                                 progressCol.Item().Height(20).Background(Colors.Grey.Lighten2);
                                 
-                                var progressWidth = Math.Min(goal.Percentage, 100);
+                                var progressWidth = Math.Min((double)percentage, 100.0);
                                 if (progressWidth > 0)
                                 {
                                     progressCol.Item().TranslateY(-20).Width((float)progressWidth).Height(20).Background(statusColor);
                                 }
                             });
 
-                            col.Item().PaddingTop(2).Text($"{goal.Percentage:F1}%").FontSize(10).FontColor(Colors.Grey.Darken1);
+                            col.Item().PaddingTop(2).Text($"{percentage:F1}%").FontSize(10).FontColor(Colors.Grey.Darken1);
                         });
                     }
 
