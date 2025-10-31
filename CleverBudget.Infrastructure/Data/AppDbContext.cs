@@ -13,6 +13,7 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<Transaction> Transactions { get; set; }
     public DbSet<Category> Categories { get; set; }
     public DbSet<Goal> Goals { get; set; }
+    public DbSet<RecurringTransaction> RecurringTransactions { get; set; } // ✨ NOVO
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -99,6 +100,41 @@ public class AppDbContext : IdentityDbContext<User>
                 .WithMany(c => c.Goals)
                 .HasForeignKey(g => g.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ✨ NOVO: Configuração de RecurringTransaction
+        modelBuilder.Entity<RecurringTransaction>(entity =>
+        {
+            entity.HasKey(r => r.Id);
+            entity.Property(r => r.Amount).HasColumnType("decimal(18,2)");
+            entity.Property(r => r.Description).HasMaxLength(500).IsRequired();
+            
+            if (isSqlite)
+            {
+                entity.Property(r => r.CreatedAt).HasDefaultValueSql("datetime('now')");
+                entity.Property(r => r.StartDate).HasColumnType("TEXT");
+                entity.Property(r => r.EndDate).HasColumnType("TEXT");
+                entity.Property(r => r.LastGeneratedDate).HasColumnType("TEXT");
+            }
+            else
+            {
+                entity.Property(r => r.CreatedAt).HasDefaultValueSql("NOW()");
+                entity.Property(r => r.StartDate).HasColumnType("timestamp");
+                entity.Property(r => r.EndDate).HasColumnType("timestamp");
+                entity.Property(r => r.LastGeneratedDate).HasColumnType("timestamp");
+            }
+
+            entity.HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(r => r.Category)
+                .WithMany()
+                .HasForeignKey(r => r.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(r => new { r.UserId, r.IsActive });
         });
 
         modelBuilder.Entity<User>(entity =>

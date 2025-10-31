@@ -133,6 +133,7 @@ try
         Log.Information("🗄️ Usando SQLite (Desenvolvimento)");
         Log.Information($"🔍 Connection string: {sqliteConnectionString}");
     }
+    
     builder.Services.AddIdentity<User, IdentityRole>(options =>
     {
         options.Password.RequireDigit = true;
@@ -146,7 +147,7 @@ try
     .AddDefaultTokenProviders();
 
     var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-    var secretKey = jwtSettings["SecretKey"] ?? Environment.GetEnvironmentVariable("JWT_SECRET_KEY");
+    var secretKey = jwtSettings["SecretKey"] ?? Environment.GetEnvironmentVariable("JwtSettings__SecretKey");
 
     if (string.IsNullOrEmpty(secretKey))
     {
@@ -245,6 +246,7 @@ try
         });
     });
 
+    // ✨ Serviços existentes
     builder.Services.AddScoped<IAuthService, AuthService>();
     builder.Services.AddScoped<ITransactionService, TransactionService>();
     builder.Services.AddScoped<ICategoryService, CategoryService>();
@@ -252,6 +254,12 @@ try
     builder.Services.AddScoped<IReportService, ReportService>();
     builder.Services.AddScoped<IExportService, ExportService>();
     builder.Services.AddScoped<IEmailService, EmailService>();
+    
+    // ✨ NOVO: Serviço de Transações Recorrentes
+    builder.Services.AddScoped<IRecurringTransactionService, RecurringTransactionService>();
+    
+    // ✨ NOVO: Background Service para gerar transações automaticamente
+    builder.Services.AddHostedService<RecurringTransactionGeneratorService>();
 
     var keysPath = Environment.GetEnvironmentVariable("DATAPROTECTION_KEYS_PATH") 
         ?? Path.Combine(Directory.GetCurrentDirectory(), "DataProtection-Keys");
