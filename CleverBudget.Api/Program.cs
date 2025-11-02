@@ -79,7 +79,14 @@ try
         databaseUrl = railwayConnectionString;
     }
 
-    if (builder.Environment.IsProduction())
+    if (builder.Environment.IsEnvironment("Test"))
+    {
+        builder.Services.AddDbContext<AppDbContext>(options =>
+            options.UseInMemoryDatabase("CleverBudgetTestDb"));
+
+        Log.Information("🗄️ Banco de dados: InMemory (Testes)");
+    }
+    else if (builder.Environment.IsProduction())
     {
         Log.Information($"🔍 Ambiente: {builder.Environment.EnvironmentName}");
 
@@ -171,10 +178,13 @@ try
 
     // Configuração do Rate Limiting
     builder.Services.AddMemoryCache();
-    builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
-    builder.Services.Configure<IpRateLimitPolicies>(builder.Configuration.GetSection("IpRateLimitPolicies"));
-    builder.Services.AddInMemoryRateLimiting();
-    builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+    if (!builder.Environment.IsEnvironment("Test"))
+    {
+        builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+        builder.Services.Configure<IpRateLimitPolicies>(builder.Configuration.GetSection("IpRateLimitPolicies"));
+        builder.Services.AddInMemoryRateLimiting();
+        builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+    }
 
     builder.Services.AddControllers()
         .ConfigureApiBehaviorOptions(options =>
@@ -294,63 +304,71 @@ try
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             try
             {
-                var canConnect = db.Database.CanConnect();
-                
-                if (!canConnect)
+                if (builder.Environment.IsEnvironment("Test"))
                 {
-                    Log.Error("❌ Falha ao conectar ao banco de dados");
-                    throw new InvalidOperationException("Não foi possível conectar ao banco de dados");
+                    db.Database.EnsureCreated();
+                    Log.Information("✅ Banco de dados em memória inicializado para testes");
                 }
-
-                Log.Information("✅ Conexão com banco estabelecida");
-
-                if (builder.Environment.IsProduction())
+                else
                 {
-                    var tableCheckQuery = "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'";
-                    var hasTables = db.Database.SqlQueryRaw<int>(tableCheckQuery).ToList().FirstOrDefault() > 0;
-
-                    if (hasTables)
+                    var canConnect = db.Database.CanConnect();
+                    
+                    if (!canConnect)
                     {
-                        var pendingMigrations = db.Database.GetPendingMigrations().ToList();
+                        Log.Error("❌ Falha ao conectar ao banco de dados");
+                        throw new InvalidOperationException("Não foi possível conectar ao banco de dados");
+                    }
 
-                        if (pendingMigrations.Any())
+                    Log.Information("✅ Conexão com banco estabelecida");
+
+                    if (builder.Environment.IsProduction())
+                    {
+                        var tableCheckQuery = "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'";
+                        var hasTables = db.Database.SqlQueryRaw<int>(tableCheckQuery).ToList().FirstOrDefault() > 0;
+
+                        if (hasTables)
                         {
-                            Log.Information($"🔄 Aplicando {pendingMigrations.Count} migration(s) pendente(s)...");
-                            try
+                            var pendingMigrations = db.Database.GetPendingMigrations().ToList();
+
+                            if (pendingMigrations.Any())
                             {
-                                db.Database.Migrate();
-                                Log.Information("✅ Migrations aplicadas com sucesso");
+                                Log.Information($"🔄 Aplicando {pendingMigrations.Count} migration(s) pendente(s)...");
+                                try
+                                {
+                                    db.Database.Migrate();
+                                    Log.Information("✅ Migrations aplicadas com sucesso");
+                                }
+                                catch (Exception migrateEx)
+                                {
+                                    Log.Warning(migrateEx, "⚠️ Erro ao aplicar migrations: {Message}", migrateEx.Message);
+                                }
                             }
-                            catch (Exception migrateEx)
+                            else
                             {
-                                Log.Warning(migrateEx, "⚠️ Erro ao aplicar migrations: {Message}", migrateEx.Message);
+                                Log.Information("✅ Banco de dados atualizado");
                             }
                         }
                         else
                         {
-                            Log.Information("✅ Banco de dados atualizado");
+                            Log.Information("🆕 Criando estrutura do banco de dados...");
+                            try
+                            {
+                                db.Database.Migrate();
+                                Log.Information("✅ Banco de dados criado com sucesso");
+                            }
+                            catch (Exception migrateEx)
+                            {
+                                Log.Error(migrateEx, "❌ Erro ao criar banco de dados: {Message}", migrateEx.Message);
+                                throw;
+                            }
                         }
                     }
                     else
                     {
-                        Log.Information("🆕 Criando estrutura do banco de dados...");
-                        try
-                        {
-                            db.Database.Migrate();
-                            Log.Information("✅ Banco de dados criado com sucesso");
-                        }
-                        catch (Exception migrateEx)
-                        {
-                            Log.Error(migrateEx, "❌ Erro ao criar banco de dados: {Message}", migrateEx.Message);
-                            throw;
-                        }
+                        // Development - apenas aplica migrations sem logs verbosos
+                        db.Database.Migrate();
+                        Log.Information("✅ Banco de dados atualizado");
                     }
-                }
-                else
-                {
-                    // Development - apenas aplica migrations sem logs verbosos
-                    db.Database.Migrate();
-                    Log.Information("✅ Banco de dados atualizado");
                 }
             }
             catch (Exception ex) when (!ex.Message.Contains("Não foi possível conectar"))
@@ -377,7 +395,10 @@ try
     app.UseSerilogRequestLogging();
 
     // Rate Limiting Middleware
-    app.UseIpRateLimiting();
+    if (!app.Environment.IsEnvironment("Test"))
+    {
+        app.UseIpRateLimiting();
+    }
 
     app.UseAuthentication();
     app.UseAuthorization();
