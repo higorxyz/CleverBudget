@@ -21,8 +21,29 @@ O CleverBudget segue a **Clean Architecture** com separação clara de responsab
 └─────────────────────────────────────────┘
                    ↑
 ┌─────────────────────────────────────────┐
+## 📐 Visão Geral
+
+O CleverBudget utiliza uma arquitetura em camadas. Cada projeto cumpre um papel específico e depende apenas do que realmente precisa para entregar a funcionalidade.
+
+```
+┌─────────────────────────────────────────┐
+│         CleverBudget.Api                │  ← Camada de Apresentação
+│      (Controllers, Configuração)        │
+└─────────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────┐
+│      CleverBudget.Application           │  ← Camada de Aplicação
+│          (Validadores)                  │
+└─────────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────┐
+│         CleverBudget.Core               │  ← Camada de Domínio
+│    (Entidades, DTOs, Interfaces)        │
+└─────────────────────────────────────────┘
+                         ↑
+┌─────────────────────────────────────────┐
 │    CleverBudget.Infrastructure          │  ← Camada de Infraestrutura
-│ (Data Access, External Services, Repos) │
+│ (EF Core, Serviços, Integrações externas)│
 └─────────────────────────────────────────┘
 ```
 
@@ -30,293 +51,198 @@ O CleverBudget segue a **Clean Architecture** com separação clara de responsab
 
 ### 1️⃣ **CleverBudget.Api** (Apresentação)
 
-**Responsabilidade:** Expor endpoints HTTP e gerenciar requisições/respostas.
+**Responsabilidade:** expor endpoints HTTP, aplicar autenticação/autorização e compor a pipeline da aplicação.
 
 ```
 CleverBudget.Api/
-├── Controllers/           # Endpoints da API
-│   ├── AuthController.cs          # Autenticação (Register, Login)
-│   ├── TransactionsController.cs  # CRUD de transações
-│   ├── CategoriesController.cs    # CRUD de categorias
-│   ├── GoalsController.cs         # CRUD de metas financeiras
-│   ├── ReportsController.cs       # Relatórios e analytics
+├── Controllers/
+│   ├── AuthController.cs
+│   ├── BudgetsController.cs
+│   ├── CategoriesController.cs
+│   ├── ExportController.cs
+│   ├── GoalsController.cs
+│   ├── ProfileController.cs
 │   ├── RecurringTransactionsController.cs
-│   └── ExportController.cs        # Exportação de dados
-├── Middlewares/           # Middlewares customizados (se houver)
-├── Program.cs             # Configuração da aplicação
-├── appsettings.json       # Configurações gerais
-└── appsettings.Development.json
+│   ├── ReportsController.cs
+│   └── TransactionsController.cs
+├── Program.cs
+├── appsettings*.json
+└── DataProtection-Keys/
 ```
 
-**Tecnologias:**
-- ASP.NET Core 9.0
-- Swagger/OpenAPI
-- JWT Bearer Authentication
-- CORS
-
-**Responsabilidades:**
-- ✅ Validação de entrada (Data Annotations + FluentValidation)
-- ✅ Autenticação e Autorização (JWT)
-- ✅ Serialização JSON
-- ✅ Tratamento de exceções
-- ✅ Logging de requisições
-- ❌ **NÃO** contém lógica de negócio
+**Highlights:**
+- ASP.NET Core 9, Minimal Hosting Model.
+- Configuração de Swagger, JWT Bearer, Rate Limiting, Logging (Serilog) e CORS.
+- Responsável apenas por orquestrar requisições; regras de negócio vivem nas camadas inferiores.
 
 ---
 
 ### 2️⃣ **CleverBudget.Application** (Aplicação)
 
-**Responsabilidade:** Orquestrar casos de uso e validações.
+**Responsabilidade:** centralizar validações de entrada reutilizáveis. Atualmente a pasta contém validadores FluentValidation para DTOs expostos pela API.
 
 ```
 CleverBudget.Application/
-├── Services/              # (Futuro: implementações de serviços)
-└── Validators/            # FluentValidation
-    ├── RegisterDtoValidator.cs
-    ├── CreateTransactionDtoValidator.cs
-    ├── CreateCategoryDtoValidator.cs
-    ├── CreateGoalDtoValidator.cs
-    └── CreateRecurringTransactionDtoValidator.cs
+└── Validators/
+     ├── CreateBudgetDtoValidator.cs
+     ├── CreateCategoryDtoValidator.cs
+     ├── CreateGoalDtoValidator.cs
+     ├── CreateRecurringTransactionDtoValidator.cs
+     ├── CreateTransactionDtoValidator.cs
+     ├── RegisterDtoValidator.cs
+     └── UserProfileDtoValidator.cs
 ```
 
-**Tecnologias:**
-- FluentValidation
-
-**Responsabilidades:**
-- ✅ Validações complexas de negócio
-- ✅ Orquestração de múltiplos serviços
-- ✅ Mapeamento entre DTOs e Entities
-- ❌ **NÃO** acessa banco de dados diretamente
+> Nota: não há serviços ou handlers nesta camada no momento. A intenção futura é mover orquestrações mais complexas para cá.
 
 ---
 
 ### 3️⃣ **CleverBudget.Core** (Domínio)
 
-**Responsabilidade:** Definir as regras de negócio e modelos do domínio.
+**Responsabilidade:** definir o contrato da aplicação (entidades, DTOs, enums e interfaces). Nenhuma dependência externa é utilizada aqui.
 
 ```
 CleverBudget.Core/
-├── Entities/              # Modelos de domínio
-│   ├── User.cs                    # Usuário (Identity)
-│   ├── Transaction.cs             # Transação financeira
-│   ├── Category.cs                # Categoria de transação
-│   ├── Goal.cs                    # Meta financeira
-│   └── RecurringTransaction.cs    # Transação recorrente
-├── DTOs/                  # Objetos de transferência
-│   ├── AuthResponseDto.cs
-│   ├── LoginDto.cs
-│   ├── RegisterDto.cs
-│   ├── TransactionDto.cs
-│   ├── CategoryDto.cs
-│   ├── GoalDto.cs
-│   ├── RecurringTransactionDto.cs
-│   ├── ReportDto.cs
-│   └── OperationResult.cs         # Wrapper de resultados
-├── Enums/                 # Enumerações
-│   ├── TransactionType.cs         # Income/Expense
-│   └── RecurrenceFrequency.cs     # Daily/Weekly/Monthly/Yearly
-├── Interfaces/            # Contratos de serviços
-│   ├── IAuthService.cs
-│   ├── ITransactionService.cs
-│   ├── ICategoryService.cs
-│   ├── IGoalService.cs
-│   ├── IRecurringTransactionService.cs
-│   ├── IReportService.cs
-│   ├── IExportService.cs
-│   └── IEmailService.cs
-└── Common/
-    └── PagedResult.cs     # Resultado paginado
+├── Common/              # Tipos utilitários (PagedResult, PaginationParams)
+├── DTOs/                # Contratos usados na fronteira da aplicação
+├── Entities/            # Modelos de domínio
+├── Enums/               # Enumerações compartilhadas
+└── Interfaces/          # Interfaces consumidas pela API
 ```
 
-**Tecnologias:**
-- .NET 9.0 Class Library
-- Nenhuma dependência externa (clean!)
-
-**Responsabilidades:**
-- ✅ Definir entidades e agregados
-- ✅ Definir interfaces (contratos)
-- ✅ Enums e Value Objects
-- ✅ Regras de negócio no domínio
-- ❌ **NÃO** depende de outras camadas
+Interfaces como `ITransactionService`, `IGoalService` ou `IExportService` são implementadas na camada de infraestrutura.
 
 ---
 
 ### 4️⃣ **CleverBudget.Infrastructure** (Infraestrutura)
 
-**Responsabilidade:** Implementar acesso a dados e serviços externos.
+**Responsabilidade:** implementar as interfaces definidas no Core, coordenar o Entity Framework Core, integrar com serviços externos (Cloudinary, Brevo, QuestPDF) e hospedar os background services.
 
 ```
 CleverBudget.Infrastructure/
 ├── Data/
-│   └── ApplicationDbContext.cs    # DbContext do EF Core
-├── Repositories/          # Implementações de repositórios
-│   ├── TransactionRepository.cs
-│   ├── CategoryRepository.cs
-│   ├── GoalRepository.cs
-│   └── RecurringTransactionRepository.cs
-├── Services/              # Implementações de serviços
-│   ├── AuthService.cs             # Autenticação JWT
-│   ├── TransactionService.cs      # Lógica de transações
-│   ├── CategoryService.cs         # Lógica de categorias
-│   ├── GoalService.cs             # Lógica de metas
+│   └── AppDbContext.cs            # DbContext baseado em IdentityDbContext
+├── Extensions/
+│   └── QueryableExtensions.cs     # Helpers de paginação
+├── Helpers/
+│   └── PdfHelper.cs               # Elementos visuais padrão para PDFs
+├── Services/
+│   ├── AuthService.cs
+│   ├── BudgetAlertService.cs      # BackgroundService
+│   ├── BudgetService.cs
+│   ├── CategoryService.cs
+│   ├── CloudinaryImageUploadService.cs
+│   ├── EmailService.cs
+│   ├── ExportService.cs
+│   ├── GoalService.cs
+│   ├── RecurringTransactionGeneratorService.cs # BackgroundService
 │   ├── RecurringTransactionService.cs
-│   ├── ReportService.cs           # Geração de relatórios
-│   ├── ExportService.cs           # Exportação CSV/PDF
-│   ├── EmailService.cs            # Envio de e-mails
-│   ├── CloudinaryService.cs       # Upload de imagens
-│   └── UserProfileService.cs      # Perfil do usuário
-├── Migrations/            # Migrações do EF Core
-├── Extensions/            # Extension methods
-│   └── ServiceCollectionExtensions.cs
-└── Helpers/
-    └── JwtHelper.cs       # Geração de tokens JWT
+│   ├── ReportService.cs
+│   ├── TransactionService.cs
+│   └── UserProfileService.cs
+└── Migrations/           # (gerado ao aplicar migrations via EF Core CLI)
 ```
 
-**Tecnologias:**
-- Entity Framework Core 9.0
-- SQL Server
-- ASP.NET Core Identity
-- Cloudinary SDK (imagens)
-- MailKit (e-mails)
-
-**Responsabilidades:**
-- ✅ Acesso ao banco de dados (EF Core)
-- ✅ Implementação de repositórios
-- ✅ Integração com APIs externas (Cloudinary, AWS)
-- ✅ Serviços de infraestrutura (Email, Storage)
-- ❌ **NÃO** expõe detalhes de implementação
+> Não há camada de repositórios dedicada: os serviços usam diretamente o `AppDbContext` para consultar e persistir dados.
 
 ---
 
 ### 5️⃣ **CleverBudget.Tests** (Testes)
 
-**Responsabilidade:** Testes unitários e de integração.
+**Responsabilidade:** garantir que controllers e serviços respeitem os contratos definidos. A suíte cobre cenários principais de autenticação, transações, orçamentos, metas, relatórios, exportação, perfil e integrações externas simuladas.
 
 ```
 CleverBudget.Tests/
-├── Services/              # Testes de serviços
+├── Controllers/
+│   ├── AuthControllerTests.cs
+│   ├── BudgetsControllerTests.cs
+│   ├── CategoriesControllerTests.cs
+│   ├── ExportControllerTests.cs
+│   ├── GoalsControllerTests.cs
+│   ├── ProfileControllerTests.cs
+│   ├── RecurringTransactionsControllerTests.cs
+│   ├── ReportsControllerTests.cs
+│   └── TransactionsControllerTests.cs
+├── Services/
 │   ├── AuthServiceTests.cs
-│   ├── TransactionServiceTests.cs
+│   ├── BudgetServiceTests.cs
 │   ├── CategoryServiceTests.cs
+│   ├── EmailServiceTests.cs
+│   ├── ExportServiceTests.cs
 │   ├── GoalServiceTests.cs
+│   ├── RecurringTransactionServiceTests.cs
+│   ├── ReportServiceTests.cs
+│   ├── TransactionServiceTests.cs
 │   └── UserProfileServiceTests.cs
-└── Controllers/           # Testes de controllers
-    ├── AuthControllerTests.cs
-    ├── TransactionsControllerTests.cs
-    └── ProfileControllerTests.cs
+└── Validators/
+     ├── CreateBudgetDtoValidatorTests.cs
+     ├── CreateCategoryDtoValidatorTests.cs
+     ├── CreateTransactionDtoValidatorTests.cs
+     ├── RegisterDtoValidatorTests.cs
+     └── UserProfileDtoValidatorTests.cs
 ```
-
-**Tecnologias:**
-- xUnit
-- Moq (mocking)
-- FluentAssertions (assertions)
-
----
 
 ## 🔄 Fluxo de Uma Requisição
 
 ```
 1. Cliente HTTP
-   ↓
+    ↓
 2. Controller (CleverBudget.Api)
-   - Valida JWT
-   - Valida input (FluentValidation)
-   ↓
-3. Service Interface (CleverBudget.Core)
-   - Define contrato
-   ↓
-4. Service Implementation (CleverBudget.Infrastructure)
-   - Executa lógica de negócio
-   - Chama Repository
-   ↓
-5. Repository (CleverBudget.Infrastructure)
-   - Acessa banco via EF Core
-   ↓
-6. Database (SQL Server)
-   - Persiste/Recupera dados
-   ↓
-7. ← Retorna Result/DTO
-   ↓
-8. ← Controller serializa para JSON
-   ↓
-9. ← Cliente recebe resposta
+    - Valida JWT e o modelo recebido
+    - Encaminha para a interface correspondente
+    ↓
+3. Interface definida no Core (ex.: ITransactionService)
+    ↓
+4. Implementação na Infrastructure
+    - Usa AppDbContext (EF Core) para ler/escrever dados
+    - Chama serviços auxiliares (email, exportação, storage)
+    ↓
+5. Banco de dados / serviços externos
+    ↓
+6. Resultado retorna como DTO para o controller → resposta HTTP
 ```
 
 ## 🎯 Padrões Utilizados
 
-### 🏛️ **Padrões Arquiteturais**
-- **Clean Architecture** - Separação de camadas
-- **Dependency Injection** - Inversão de controle
-- **Repository Pattern** - Abstração de acesso a dados
-- **Unit of Work** - Gerenciamento de transações (via DbContext)
+- **Injeção de dependências** para isolar contratos e implementações.
+- **DTO Pattern** para controlar o que trafega pela API.
+- **Result Pattern** (`AuthResult`, `OperationResult<T>`) para mensagens ricas de erro.
+- **FluentValidation** para validar DTOs antes da execução de regras de negócio.
+- **BackgroundService** para rotinas recorrentes (transações recorrentes e alertas de orçamento).
 
-### 🛠️ **Padrões de Código**
-- **DTO Pattern** - Objetos de transferência
-- **Result Pattern** - `OperationResult<T>` e `AuthResult`
-- **Validator Pattern** - FluentValidation
-- **Factory Methods** - `SuccessResult()`, `FailureResult()`
+## 🔐 Considerações de Segurança
 
-### 🔐 **Segurança**
-- **JWT Authentication** - Tokens stateless
-- **Password Hashing** - ASP.NET Core Identity (PBKDF2)
-- **Content Moderation** - AWS Rekognition via Cloudinary
-- **Data Protection** - Chaves persistidas
+- Autenticação baseada em JWT com ASP.NET Identity.
+- Políticas de senha configuradas via `IdentityOptions`.
+- `AspNetCoreRateLimit` para mitigar abuso de endpoints públicos.
+- Data Protection com persistência de chaves em disco (desenvolvimento) e proteção adicional em produção.
+- Upload de imagens com moderação automática (Cloudinary + AWS Rekognition).
 
-## 📊 Diagrama de Dependências
+## � Diagrama de Dependências
 
 ```
 CleverBudget.Api
-    ├── depende → CleverBudget.Application
-    ├── depende → CleverBudget.Infrastructure
-    └── depende → CleverBudget.Core
+     ├── depende → CleverBudget.Application
+     ├── depende → CleverBudget.Infrastructure
+     └── depende → CleverBudget.Core
 
-CleverBudget.Application
-    └── depende → CleverBudget.Core
+CleverBudget.Application → CleverBudget.Core
+CleverBudget.Infrastructure → CleverBudget.Core
+CleverBudget.Tests → (todas as camadas conforme o cenário)
 
-CleverBudget.Infrastructure
-    └── depende → CleverBudget.Core
-
-CleverBudget.Core
-    └── sem dependências externas ✨
+CleverBudget.Core → sem dependências internas
 ```
 
-**Princípio:** Core é independente, Infrastructure e Application dependem do Core, API depende de todos.
+## 🔮 Próximos Passos
 
-## 🧩 Principais Componentes
-
-### Authentication System
-- **JWT Tokens** - Autenticação stateless
-- **ASP.NET Identity** - Gerenciamento de usuários
-- **Password Policies** - Requisitos configuráveis
-- **Error Codes** - Mensagens específicas
-
-### Transaction Management
-- **CRUD Completo** - Criar, ler, atualizar, deletar
-- **Filtros** - Por período, categoria, tipo
-- **Paginação** - Performance otimizada
-- **Recorrência** - Transações automáticas
-
-### Reporting & Analytics
-- **Relatórios** - Gastos por categoria, período
-- **Exportação** - CSV, PDF (futuro)
-- **Gráficos** - Dados agregados para frontend
-
-### Content Moderation
-- **Image Upload** - Via Cloudinary
-- **AWS Rekognition** - Moderação automática
-- **Fallback** - Se moderação falhar, imagem aceita com warning
-
-## 🔮 Próximas Evoluções
-
-- [ ] CQRS Pattern para queries complexas
-- [ ] Event Sourcing para auditoria
-- [ ] Redis Cache para performance
-- [ ] SignalR para notificações real-time
-- [ ] GraphQL API alternativa
+- Migrar orquestrações mais complexas para serviços na camada Application quando necessário.
+- Reduzir consultas N+1 em serviços de orçamento e metas com consultas agregadas.
+- Introduzir cache ou CQRS caso surja necessidade de escalabilidade.
 
 ## 📚 Documentos Relacionados
 
 - [Guia de Configuração](./SETUP.md)
 - [Autenticação](./AUTHENTICATION.md)
 - [Database Schema](./DATABASE_SCHEMA.md)
-- [Padrões de Código](./CODING_STANDARDS.md)
+- [Testes](./TESTING.md)
+- **Clean Architecture** - Separação de camadas

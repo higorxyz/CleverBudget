@@ -10,26 +10,21 @@ Bem-vindo à documentação técnica do CleverBudget! Esta pasta contém guias e
 
 ### 🔐 Autenticação e Segurança
 - **[Autenticação](./AUTHENTICATION.md)** - Sistema de autenticação JWT
-- **[Segurança](./SECURITY.md)** - Práticas de segurança e proteção de dados
 
 ### 🔧 Serviços Externos
-- **[Todos os Serviços e Dependências](./EXTERNAL_SERVICES.md)** - Guia completo de TODAS as dependências externas
+- **[Serviços e Dependências](./EXTERNAL_SERVICES.md)** - Cloudinary, Brevo, QuestPDF, CsvHelper e outros
 
-### �📡 API Reference
+### 📡 API Reference
 - **[Endpoints](./ENDPOINTS.md)** - Lista completa de endpoints disponíveis
 - **[Mensagens de Erro](./ERROR_MESSAGES.md)** - Códigos e mensagens de erro
-- **[Validações](./VALIDATIONS.md)** - Regras de validação de dados
 
 ### 💾 Banco de Dados
 - **[Schema do Banco](./DATABASE_SCHEMA.md)** - Estrutura das tabelas e relacionamentos
-- **[Migrations](./MIGRATIONS.md)** - Como trabalhar com migrações
 
 ### 🧪 Testes
 - **[Guia de Testes](./TESTING.md)** - Como escrever e executar testes
-- **[Cobertura de Testes](./TEST_COVERAGE.md)** - Métricas e relatórios
 
 ### 🔧 Desenvolvimento
-- **[Padrões de Código](./CODING_STANDARDS.md)** - Convenções e boas práticas
 - **[Contribuindo](./CONTRIBUTING.md)** - Como contribuir com o projeto
 
 ### 🚢 Deploy

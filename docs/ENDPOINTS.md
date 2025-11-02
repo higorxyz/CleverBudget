@@ -1,665 +1,315 @@
-# 📡 API Endpoints - CleverBudget
+# API Endpoints – CleverBudget
 
-## 🌐 Base URL
+## Bases de URL
+- Desenvolvimento HTTP: `http://localhost:5220/api`
+- Desenvolvimento HTTPS: `https://localhost:7035/api`
+- Produção (Railway): `https://cleverbudget-production.up.railway.app/api`
 
-- **Development:** `https://localhost:5001/api`
-- **Production:** `https://cleverbudget-production.up.railway.app/api`
-
-## 📋 Índice de Endpoints
-
-- [🔐 Autenticação](#-autenticação)
-- [💰 Transações](#-transações)
-- [📁 Categorias](#-categorias)
-- [🎯 Metas](#-metas)
-- [🔄 Transações Recorrentes](#-transações-recorrentes)
-- [📊 Relatórios](#-relatórios)
-- [📥 Exportação](#-exportação)
-- [👤 Perfil](#-perfil)
+## Convenções
+- Endpoints marcados com "Requer token" precisam do header `Authorization: Bearer <jwt>`.
+- Respostas paginadas usam `PagedResult<T>` com campos `items`, `page`, `pageSize`, `totalCount`, `totalPages`, `hasPreviousPage`, `hasNextPage`.
+- Datas aceitam `yyyy-MM-dd` ou ISO-8601.
+- Enums relevantes:
+  - `TransactionType`: `1=Income`, `2=Expense`
+  - `RecurrenceFrequency`: `1=Daily`, `2=Weekly`, `3=Monthly`, `4=Yearly`
 
 ---
 
-## 🔐 Autenticação
+## Autenticação (`/api/auth`)
 
-**Base:** `/api/auth`
-
-### POST `/api/auth/register`
-
-Registra um novo usuário.
-
-**Autenticação:** Não requerida
-
-**Request Body:**
-```json
-{
-  "email": "usuario@example.com",
-  "password": "SenhaForte123!",
-  "confirmPassword": "SenhaForte123!"
-}
-```
-
-**Success Response (200 OK):**
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "email": "usuario@example.com",
-  "expiresIn": 3600
-}
-```
-
-**Error Responses:**
-- `400 Bad Request` - Validação falhou ([ver códigos](./ERROR_MESSAGES.md#register))
-
----
-
-### POST `/api/auth/login`
-
-Autentica um usuário existente.
-
-**Autenticação:** Não requerida
-
-**Request Body:**
-```json
-{
-  "email": "usuario@example.com",
-  "password": "SenhaForte123!"
-}
-```
-
-**Success Response (200 OK):**
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "email": "usuario@example.com",
-  "expiresIn": 3600
-}
-```
-
-**Error Responses:**
-- `401 Unauthorized` - Credenciais inválidas
-
----
-
-## 💰 Transações
-
-**Base:** `/api/transactions`
-
-**Autenticação:** ✅ Requerida (todas as rotas)
-
-### GET `/api/transactions`
-
-Lista todas as transações do usuário autenticado com filtros opcionais.
-
-**Query Parameters:**
-```
-?startDate=2024-01-01          # Data inicial (opcional)
-&endDate=2024-12-31            # Data final (opcional)
-&type=0                        # 0=Expense, 1=Income (opcional)
-&categoryId=5                  # ID da categoria (opcional)
-&page=1                        # Número da página (default: 1)
-&pageSize=10                   # Itens por página (default: 10)
-```
-
-**Success Response (200 OK):**
-```json
-{
-  "items": [
-    {
-      "id": 1,
-      "userId": "123e4567-e89b-12d3-a456-426614174000",
-      "categoryId": 5,
-      "categoryName": "Alimentação",
-      "amount": 45.50,
-      "description": "Almoço no restaurante",
-      "date": "2024-11-01T12:30:00Z",
-      "type": 0,
-      "imageUrl": "https://res.cloudinary.com/...",
-      "createdAt": "2024-11-01T12:35:00Z",
-      "updatedAt": null
-    }
-  ],
-  "totalCount": 150,
-  "page": 1,
-  "pageSize": 10,
-  "totalPages": 15
-}
-```
-
----
-
-### GET `/api/transactions/{id}`
-
-Obtém uma transação específica.
-
-**Path Parameters:**
-- `id` (int) - ID da transação
-
-**Success Response (200 OK):**
-```json
-{
-  "id": 1,
-  "userId": "123e4567-e89b-12d3-a456-426614174000",
-  "categoryId": 5,
-  "categoryName": "Alimentação",
-  "amount": 45.50,
-  "description": "Almoço no restaurante",
-  "date": "2024-11-01T12:30:00Z",
-  "type": 0,
-  "imageUrl": "https://res.cloudinary.com/...",
-  "createdAt": "2024-11-01T12:35:00Z",
-  "updatedAt": null
-}
-```
-
-**Error Responses:**
-- `404 Not Found` - Transação não encontrada
-
----
-
-### POST `/api/transactions`
-
-Cria uma nova transação.
-
-**Request Body:**
-```json
-{
-  "categoryId": 5,
-  "amount": 45.50,
-  "description": "Almoço no restaurante",
-  "date": "2024-11-01T12:30:00Z",
-  "type": 0,
-  "imageUrl": "https://res.cloudinary.com/..."  // opcional
-}
-```
-
-**Success Response (201 Created):**
-```json
-{
-  "id": 1,
-  "userId": "123e4567-e89b-12d3-a456-426614174000",
-  "categoryId": 5,
-  "categoryName": "Alimentação",
-  "amount": 45.50,
-  "description": "Almoço no restaurante",
-  "date": "2024-11-01T12:30:00Z",
-  "type": 0,
-  "imageUrl": "https://res.cloudinary.com/...",
-  "createdAt": "2024-11-01T12:35:00Z",
-  "updatedAt": null
-}
-```
-
-**Error Responses:**
-- `400 Bad Request` - Validação falhou
-- `404 Not Found` - Categoria não encontrada
-
----
-
-### PUT `/api/transactions/{id}`
-
-Atualiza uma transação existente.
-
-**Path Parameters:**
-- `id` (int) - ID da transação
-
-**Request Body:**
-```json
-{
-  "categoryId": 6,
-  "amount": 50.00,
-  "description": "Almoço no restaurante (atualizado)",
-  "date": "2024-11-01T12:30:00Z",
-  "type": 0,
-  "imageUrl": "https://res.cloudinary.com/..."
-}
-```
-
-**Success Response (200 OK):**
-```json
-{
-  "id": 1,
-  "userId": "123e4567-e89b-12d3-a456-426614174000",
-  "categoryId": 6,
-  "categoryName": "Restaurantes",
-  "amount": 50.00,
-  "description": "Almoço no restaurante (atualizado)",
-  "date": "2024-11-01T12:30:00Z",
-  "type": 0,
-  "imageUrl": "https://res.cloudinary.com/...",
-  "createdAt": "2024-11-01T12:35:00Z",
-  "updatedAt": "2024-11-01T14:20:00Z"
-}
-```
-
-**Error Responses:**
-- `400 Bad Request` - Validação falhou
-- `404 Not Found` - Transação ou categoria não encontrada
-
----
-
-### DELETE `/api/transactions/{id}`
-
-Deleta uma transação.
-
-**Path Parameters:**
-- `id` (int) - ID da transação
-
-**Success Response (204 No Content)**
-
-**Error Responses:**
-- `404 Not Found` - Transação não encontrada
-
----
-
-## 📁 Categorias
-
-**Base:** `/api/categories`
-
-**Autenticação:** ✅ Requerida (todas as rotas)
-
-### GET `/api/categories`
-
-Lista todas as categorias do usuário.
-
-**Query Parameters:**
-```
-?type=0    # 0=Expense, 1=Income (opcional)
-```
-
-**Success Response (200 OK):**
-```json
-[
+### POST `/register`
+- Cria usuário com nome e sobrenome.
+- Corpo:
+  ```json
   {
-    "id": 1,
-    "userId": "123e4567-e89b-12d3-a456-426614174000",
-    "name": "Alimentação",
-    "type": 0,
-    "createdAt": "2024-01-01T10:00:00Z"
-  },
+    "firstName": "Ana",
+    "lastName": "Lima",
+    "email": "ana@example.com",
+    "password": "SenhaForte123!",
+    "confirmPassword": "SenhaForte123!"
+  }
+  ```
+- 200 OK:
+  ```json
   {
-    "id": 2,
-    "userId": "123e4567-e89b-12d3-a456-426614174000",
-    "name": "Salário",
+    "token": "<jwt>",
+    "email": "ana@example.com",
+    "firstName": "Ana",
+    "lastName": "Lima",
+    "expiresAt": "2025-11-02T18:45:27Z"
+  }
+  ```
+- 400 Bad Request: `{"message": "Senha fraca.", "errorCode": "AUTH_WEAK_PASSWORD"}`
+
+### POST `/login`
+- Requer `email` e `password`.
+- Retorna o mesmo `AuthResponseDto` acima.
+- 401 Unauthorized em credencial inválida (`errorCode` típico: `AUTH_INVALID_CREDENTIALS`).
+
+---
+
+## Perfil (`/api/profile`)
+
+### GET `/`
+- Requer token.
+- 200 OK (`UserProfileDto`):
+  ```json
+  {
+    "id": "8c6c...",
+    "firstName": "Ana",
+    "lastName": "Lima",
+    "email": "ana@example.com",
+    "photoUrl": "https://res.cloudinary.com/...",
+    "createdAt": "2024-05-10T14:12:00Z"
+  }
+  ```
+
+### PUT `/`
+- Atualiza `firstName` e `lastName`.
+- 200 OK: `{"message":"Perfil atualizado com sucesso"}`.
+
+### PUT `/password`
+- Corpo: `currentPassword`, `newPassword`, `confirmPassword`.
+- 200 OK em sucesso; 400 Bad Request retorna `message` e `errorCode` (por exemplo `AUTH_PASSWORD_MISMATCH`).
+
+### PUT `/photo` (legado)
+- Define uma URL já hospedada. Deve ser evitado; permanece por compatibilidade.
+
+### POST `/photo`
+- Recebe `multipart/form-data` com campo `file` (até 5 MB, JPG/PNG/WebP).
+- Exige credenciais Cloudinary configuradas.
+- 200 OK: `{"message": "Foto enviada e atualizada com sucesso", "photoUrl": "..."}`.
+
+---
+
+## Orçamentos (`/api/budgets`)
+
+### GET `/`
+- Query opcional: `year`, `month`.
+- 200 OK: lista de `BudgetResponseDto` com campos como `amount`, `spent`, `remaining`, `percentageUsed`, status (`Normal`, `Alerta`, `Crítico`, `Excedido`).
+
+### GET `/paged`
+- Query extra: `page`, `pageSize` (máx 100), `sortBy`, `sortOrder`.
+- Retorna `PagedResult<BudgetResponseDto>`.
+
+### GET `/{id}` | GET `/category/{categoryId}/period?month=&year=` | GET `/current`
+- Buscam orçamento específico, por categoria/período ou todos do mês atual.
+
+### GET `/summary?month=&year=`
+- 200 OK:
+  ```json
+  {
+    "month": 11,
+    "year": 2025,
+    "totalBudget": 2500.00,
+    "totalSpent": 1800.00,
+    "remaining": 700.00,
+    "percentageUsed": 72.0,
+    "status": "Alerta"
+  }
+  ```
+
+### POST `/`
+- Corpo:
+  ```json
+  {
+    "categoryId": 12,
+    "amount": 800.00,
+    "month": 11,
+    "year": 2025,
+    "alertAt50Percent": true,
+    "alertAt80Percent": true,
+    "alertAt100Percent": false
+  }
+  ```
+- 201 Created com `BudgetResponseDto`.
+- 400 Bad Request quando já existe orçamento para a categoria no período ou categoria inválida.
+
+### PUT `/{id}`
+- Campos aceitos: `amount`, `alertAt50Percent`, `alertAt80Percent`, `alertAt100Percent`.
+
+### DELETE `/{id}`
+- Remove orçamento; 404 se não existir.
+
+---
+
+## Categorias (`/api/categories`)
+
+### GET `/`
+- Query: `page`, `pageSize`, `sortBy` (name|createdAt|isDefault), `sortOrder`.
+- Retorna `PagedResult<CategoryResponseDto>` com `isDefault`, `icon`, `color`.
+
+### GET `/all`
+- Lista completa (útil para combos).
+
+### GET `/{id}` | POST `/` | PUT `/{id}` | DELETE `/{id}`
+- Criação exige `name` e opcional `icon`, `color`.
+- Atualização só funciona para categorias customizadas.
+- DELETE falha com 400 quando categoria é padrão ou possui transações.
+
+---
+
+## Transações (`/api/transactions`)
+
+### GET `/`
+- Query: `page`, `pageSize`, `sortBy` (`date|amount|description|category`), `sortOrder`, `type`, `categoryId`, `startDate`, `endDate`.
+- Retorna `PagedResult<TransactionResponseDto>`:
+  ```json
+  {
+    "items": [
+      {
+        "id": 42,
+        "amount": 120.00,
+        "type": 2,
+        "description": "Supermercado",
+        "categoryId": 5,
+        "categoryName": "Alimentação",
+        "categoryIcon": "utensils",
+        "categoryColor": "#FF6B6B",
+        "date": "2025-11-01T12:30:00Z",
+        "createdAt": "2025-11-01T12:31:12Z"
+      }
+    ],
+    "page": 1,
+    "pageSize": 10,
+    "totalCount": 87,
+    "totalPages": 9
+  }
+  ```
+
+### GET `/{id}`
+- 404 quando a transação não pertence ao usuário.
+
+### POST `/`
+- Corpo mínimo:
+  ```json
+  {
+    "amount": 120.00,
+    "type": 2,
+    "description": "Supermercado",
+    "categoryId": 5,
+    "date": "2025-11-01"
+  }
+  ```
+- 201 Created com `TransactionResponseDto`.
+- 400 Bad Request se a categoria não for do usuário.
+
+### PUT `/{id}`
+- Campos opcionais (`amount`, `type`, `description`, `categoryId`, `date`).
+
+### DELETE `/{id}`
+- 204 em sucesso, 404 se não existir.
+
+---
+
+## Transações recorrentes (`/api/recurringtransactions`)
+
+### GET `/`
+- Query: `page`, `pageSize`, `sortBy` (`amount|description|frequency|startDate`), `sortOrder`, `isActive`.
+- Retorna `PagedResult<RecurringTransactionResponseDto>` com campos `frequencyDescription`, `dayOfMonth`, `dayOfWeek`, `lastGeneratedDate`, `nextGenerationDate`.
+
+### GET `/all`
+- Lista sem paginação (aceita `isActive`).
+
+### GET `/{id}` | POST `/` | PUT `/{id}` | DELETE `/{id}`
+- Criação exige:
+  ```json
+  {
+    "amount": 5000,
     "type": 1,
-    "createdAt": "2024-01-01T10:05:00Z"
+    "description": "Salário",
+    "categoryId": 2,
+    "frequency": 3,
+    "startDate": "2025-11-01",
+    "dayOfMonth": 1
   }
-]
-```
+  ```
+- Atualização permite ajustar `amount`, `description`, `endDate`.
+
+### PATCH `/{id}/toggle-active`
+- Alterna entre ativo/inativo. 404 se não pertencer ao usuário.
 
 ---
 
-### GET `/api/categories/{id}`
+## Metas (`/api/goals`)
 
-Obtém uma categoria específica.
+### GET `/`
+- Query: `page`, `pageSize`, `sortBy` (`targetAmount|category|month|year`), `sortOrder`, `month`, `year`.
+- Retorna `PagedResult<GoalResponseDto>`.
 
-**Success Response (200 OK):**
-```json
-{
-  "id": 1,
-  "userId": "123e4567-e89b-12d3-a456-426614174000",
-  "name": "Alimentação",
-  "type": 0,
-  "createdAt": "2024-01-01T10:00:00Z"
-}
-```
+### GET `/all`
+- Lista metas sem paginação (suporta `month`, `year`).
 
-**Error Responses:**
-- `404 Not Found` - Categoria não encontrada
+### GET `/{id}` | POST `/` | PUT `/{id}` | DELETE `/{id}`
+- Criação requer `categoryId`, `targetAmount`, `month`, `year`.
+- PUT aceita apenas `targetAmount`.
+
+### GET `/status?month=&year=`
+- Retorna `GoalStatusDto` com `currentAmount`, `percentage` e `status` (`Dentro`, `Em risco`, `Atingida`, etc.).
 
 ---
 
-### POST `/api/categories`
+## Relatórios (`/api/reports`)
 
-Cria uma nova categoria.
-
-**Request Body:**
-```json
-{
-  "name": "Alimentação",
-  "type": 0
-}
-```
-
-**Success Response (201 Created):**
-```json
-{
-  "id": 1,
-  "userId": "123e4567-e89b-12d3-a456-426614174000",
-  "name": "Alimentação",
-  "type": 0,
-  "createdAt": "2024-11-01T10:00:00Z"
-}
-```
-
-**Error Responses:**
-- `400 Bad Request` - Validação falhou ou categoria duplicada
-
----
-
-### PUT `/api/categories/{id}`
-
-Atualiza uma categoria.
-
-**Request Body:**
-```json
-{
-  "name": "Alimentação Fora",
-  "type": 0
-}
-```
-
-**Success Response (200 OK):**
-```json
-{
-  "id": 1,
-  "userId": "123e4567-e89b-12d3-a456-426614174000",
-  "name": "Alimentação Fora",
-  "type": 0,
-  "createdAt": "2024-01-01T10:00:00Z"
-}
-```
-
----
-
-### DELETE `/api/categories/{id}`
-
-Deleta uma categoria.
-
-**Success Response (204 No Content)**
-
-**Error Responses:**
-- `404 Not Found` - Categoria não encontrada
-- `409 Conflict` - Categoria em uso por transações (implementação futura)
-
----
-
-## 🎯 Metas
-
-**Base:** `/api/goals`
-
-**Autenticação:** ✅ Requerida
-
-### GET `/api/goals`
-
-Lista todas as metas do usuário.
-
-**Success Response (200 OK):**
-```json
-[
+### GET `/summary`
+- Query: `startDate`, `endDate`.
+- Exemplo:
+  ```json
   {
-    "id": 1,
-    "userId": "123e4567-e89b-12d3-a456-426614174000",
-    "name": "Férias 2025",
-    "targetAmount": 5000.00,
-    "currentAmount": 2500.00,
-    "deadline": "2025-12-31T23:59:59Z",
-    "progressPercentage": 50.0,
-    "isCompleted": false,
-    "createdAt": "2024-01-01T00:00:00Z"
+    "totalIncome": 12000.00,
+    "totalExpenses": 8200.00,
+    "balance": 3800.00,
+    "transactionCount": 94,
+    "startDate": "2025-08-01T00:00:00Z",
+    "endDate": "2025-10-31T23:59:59Z"
   }
-]
+  ```
+
+### GET `/categories`
+- Query: `startDate`, `endDate`, `expensesOnly` (default `true`).
+- Retorna lista de `CategoryReportDto`.
+
+### GET `/monthly?months=12`
+- Retorna histórico dos últimos `n` meses (`MonthlyReportDto`).
+
+### GET `/detailed`
+- Junta `summary`, `topExpenseCategories`, `topIncomeCategories`, `monthlyHistory` em um `DetailedReportDto`.
+
+---
+
+## Exportação (`/api/export`)
+
+### CSV
+- `GET /transactions/csv?startDate=&endDate=`
+- `GET /categories/csv`
+- `GET /goals/csv?month=&year=`
+- Resposta: arquivo `text/csv` gerado pelo CsvHelper com cabeçalhos em português.
+
+### PDF
+- `GET /transactions/pdf?startDate=&endDate=`
+- `GET /financial-report/pdf?startDate=&endDate=`
+- `GET /goals-report/pdf?month=&year=`
+- Resposta: `application/pdf` produzido pelo QuestPDF.
+
+---
+
+## Requisições autenticadas
+
+Inclua sempre:
+```
+Authorization: Bearer <seu_jwt>
+Content-Type: application/json
+```
+
+Exemplo PowerShell:
+```powershell
+Invoke-RestMethod -Method Get "https://localhost:7035/api/transactions?page=1" -Headers @{ Authorization = "Bearer $token" }
 ```
 
 ---
 
-### POST `/api/goals`
-
-Cria uma nova meta.
-
-**Request Body:**
-```json
-{
-  "name": "Férias 2025",
-  "targetAmount": 5000.00,
-  "currentAmount": 0.00,
-  "deadline": "2025-12-31T23:59:59Z"
-}
-```
-
-**Success Response (201 Created):**
-```json
-{
-  "id": 1,
-  "userId": "123e4567-e89b-12d3-a456-426614174000",
-  "name": "Férias 2025",
-  "targetAmount": 5000.00,
-  "currentAmount": 0.00,
-  "deadline": "2025-12-31T23:59:59Z",
-  "progressPercentage": 0.0,
-  "isCompleted": false,
-  "createdAt": "2024-11-01T00:00:00Z"
-}
-```
-
----
-
-### PUT `/api/goals/{id}`
-
-Atualiza uma meta (geralmente para adicionar valor a `currentAmount`).
-
-**Request Body:**
-```json
-{
-  "name": "Férias 2025",
-  "targetAmount": 5000.00,
-  "currentAmount": 3000.00,
-  "deadline": "2025-12-31T23:59:59Z"
-}
-```
-
----
-
-### DELETE `/api/goals/{id}`
-
-Deleta uma meta.
-
-**Success Response (204 No Content)**
-
----
-
-## 🔄 Transações Recorrentes
-
-**Base:** `/api/recurringtransactions`
-
-**Autenticação:** ✅ Requerida
-
-### GET `/api/recurringtransactions`
-
-Lista todas as transações recorrentes ativas.
-
-**Success Response (200 OK):**
-```json
-[
-  {
-    "id": 1,
-    "userId": "123e4567-e89b-12d3-a456-426614174000",
-    "categoryId": 10,
-    "categoryName": "Salário",
-    "amount": 5000.00,
-    "description": "Salário mensal",
-    "startDate": "2024-01-01T00:00:00Z",
-    "frequency": 2,
-    "isActive": true,
-    "nextOccurrence": "2024-12-01T00:00:00Z",
-    "createdAt": "2024-01-01T00:00:00Z"
-  }
-]
-```
-
-**Frequency Enum:**
-- `0` = Daily
-- `1` = Weekly
-- `2` = Monthly
-- `3` = Yearly
-
----
-
-### POST `/api/recurringtransactions`
-
-Cria uma transação recorrente.
-
-**Request Body:**
-```json
-{
-  "categoryId": 10,
-  "amount": 5000.00,
-  "description": "Salário mensal",
-  "startDate": "2024-01-01T00:00:00Z",
-  "frequency": 2
-}
-```
-
----
-
-### PUT `/api/recurringtransactions/{id}`
-
-Atualiza uma transação recorrente.
-
----
-
-### DELETE `/api/recurringtransactions/{id}`
-
-Deleta uma transação recorrente.
-
-**Success Response (204 No Content)**
-
----
-
-## 📊 Relatórios
-
-**Base:** `/api/reports`
-
-**Autenticação:** ✅ Requerida
-
-### GET `/api/reports/summary`
-
-Obtém resumo financeiro por período.
-
-**Query Parameters:**
-```
-?startDate=2024-01-01&endDate=2024-12-31
-```
-
-**Success Response (200 OK):**
-```json
-{
-  "totalIncome": 60000.00,
-  "totalExpense": 45000.00,
-  "balance": 15000.00,
-  "expenseByCategory": [
-    {
-      "categoryName": "Alimentação",
-      "total": 12000.00,
-      "percentage": 26.67
-    },
-    {
-      "categoryName": "Transporte",
-      "total": 8000.00,
-      "percentage": 17.78
-    }
-  ],
-  "incomeByCategory": [
-    {
-      "categoryName": "Salário",
-      "total": 60000.00,
-      "percentage": 100.0
-    }
-  ]
-}
-```
-
----
-
-## 📥 Exportação
-
-**Base:** `/api/export`
-
-**Autenticação:** ✅ Requerida
-
-### GET `/api/export/transactions/csv`
-
-Exporta transações em formato CSV.
-
-**Query Parameters:**
-```
-?startDate=2024-01-01&endDate=2024-12-31
-```
-
-**Success Response (200 OK):**
-```
-Content-Type: text/csv
-Content-Disposition: attachment; filename="transactions_2024.csv"
-
-Data,Descrição,Categoria,Tipo,Valor
-2024-01-01,Almoço,Alimentação,Despesa,45.50
-2024-01-02,Salário,Salário,Receita,5000.00
-...
-```
-
----
-
-## 👤 Perfil
-
-**Base:** `/api/profile`
-
-**Autenticação:** ✅ Requerida
-
-### POST `/api/profile/change-password`
-
-Altera a senha do usuário.
-
-**Request Body:**
-```json
-{
-  "currentPassword": "SenhaAntiga123!",
-  "newPassword": "SenhaNova456!",
-  "confirmNewPassword": "SenhaNova456!"
-}
-```
-
-**Success Response (200 OK):**
-```json
-{
-  "message": "Senha alterada com sucesso"
-}
-```
-
-**Error Responses:**
-- `400 Bad Request` - Senhas não conferem ou senha atual incorreta
-- `404 Not Found` - Usuário não encontrado
-
----
-
-## 🔐 Autenticação nos Endpoints
-
-Todos os endpoints protegidos requerem o header:
-
-```
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-### Exemplo com cURL
-
-```bash
-curl -X GET "https://localhost:5001/api/transactions" \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
-  -H "Content-Type: application/json"
-```
-
-### Exemplo com JavaScript
-
-```javascript
-const response = await fetch('/api/transactions', {
-  headers: {
-    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-    'Content-Type': 'application/json'
-  }
-});
-```
-
----
-
-## 📚 Documentos Relacionados
-
-- [Mensagens de Erro](./ERROR_MESSAGES.md) - Códigos de erro completos
-- [Autenticação](./AUTHENTICATION.md) - Detalhes de JWT e login
-- [Database Schema](./DATABASE_SCHEMA.md) - Estrutura das tabelas
+## Referências úteis
+- [AUTHENTICATION.md](./AUTHENTICATION.md)
+- [ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md)
+- [ERROR_MESSAGES.md](./ERROR_MESSAGES.md)
+- [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md)

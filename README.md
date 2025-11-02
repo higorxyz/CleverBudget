@@ -10,7 +10,7 @@
 
 ## 🚀 Sobre o Projeto
 
-O **CleverBudget** é uma API REST completa para gerenciamento de finanças pessoais, desenvolvida seguindo os princípios de **Clean Architecture** e boas práticas de desenvolvimento.
+O **CleverBudget** é uma API REST completa para gerenciamento de finanças pessoais, construída com uma arquitetura em camadas inspirada em **Clean Architecture** e boas práticas de desenvolvimento.
 
 ### ✨ Principais Funcionalidades
 
@@ -74,7 +74,7 @@ dotnet run --project CleverBudget.Api
 | **Banco de Dados** | SQLite (dev) / PostgreSQL (prod) |
 | **Autenticação** | JWT Bearer + Identity |
 | **Documentação** | Swagger/OpenAPI |
-| **Arquitetura** | Clean Architecture |
+| **Arquitetura** | Camadas (Api/Core/Application/Infrastructure) |
 | **Testes** | xUnit + Moq |
 
 ---
@@ -85,8 +85,8 @@ dotnet run --project CleverBudget.Api
 CleverBudget/
 ├── CleverBudget.Api/          # Camada de apresentação (Controllers, Endpoints)
 ├── CleverBudget.Core/         # Entidades, DTOs, Interfaces
-├── CleverBudget.Application/  # Lógica de negócio
-├── CleverBudget.Infrastructure/ # Persistência, Repositórios, Serviços
+├── CleverBudget.Application/  # Validadores (FluentValidation)
+├── CleverBudget.Infrastructure/ # EF Core, Serviços, Integrações externas
 └── CleverBudget.Tests/        # Testes unitários
 ```
 
@@ -219,6 +219,7 @@ A API utiliza **JWT Bearer Token**. Para acessar endpoints protegidos:
 - ✅ Relatórios Financeiros
 
 🔵 **Fase 2 — Recursos Avançados (100% Concluído)** ✅
+🔵 **Fase 2 — Recursos Avançados (100% Concluído)** ✅
 - ✅ Exportação PDF/CSV
 - ✅ Notificações por Email (Brevo)
 - ✅ Transações Recorrentes (Automáticas)
@@ -227,7 +228,7 @@ A API utiliza **JWT Bearer Token**. Para acessar endpoints protegidos:
 - ✅ Perfil de Usuário (nome, email, senha, foto)
 - ✅ Upload de Foto com Cloudinary + AWS Rekognition (moderação de conteúdo)
 - ✅ Validações com FluentValidation
-- ✅ Testes unitários (354 testes - 70%+ cobertura)
+- ✅ Testes unitários cobrindo serviços e controllers centrais
 - ✅ Rate Limiting (AspNetCoreRateLimit)
 - ✅ Deploy no Railway
 
