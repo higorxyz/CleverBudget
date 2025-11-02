@@ -14,6 +14,7 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<Category> Categories { get; set; }
     public DbSet<Goal> Goals { get; set; }
     public DbSet<RecurringTransaction> RecurringTransactions { get; set; }
+    public DbSet<Budget> Budgets { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -96,6 +97,34 @@ public class AppDbContext : IdentityDbContext<User>
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasIndex(r => new { r.UserId, r.IsActive });
+        });
+
+        modelBuilder.Entity<Budget>(entity =>
+        {
+            entity.HasKey(b => b.Id);
+            entity.Property(b => b.Amount).HasColumnType("decimal(18,2)");
+            entity.Property(b => b.Month).IsRequired();
+            entity.Property(b => b.Year).IsRequired();
+            entity.Property(b => b.AlertAt50Percent).HasConversion<bool>();
+            entity.Property(b => b.AlertAt80Percent).HasConversion<bool>();
+            entity.Property(b => b.AlertAt100Percent).HasConversion<bool>();
+            entity.Property(b => b.Alert50Sent).HasConversion<bool>();
+            entity.Property(b => b.Alert80Sent).HasConversion<bool>();
+            entity.Property(b => b.Alert100Sent).HasConversion<bool>();
+            entity.Property(b => b.CreatedAt).IsRequired();
+
+            entity.HasOne(b => b.User)
+                .WithMany()
+                .HasForeignKey(b => b.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(b => b.Category)
+                .WithMany()
+                .HasForeignKey(b => b.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(b => new { b.UserId, b.CategoryId, b.Month, b.Year })
+                .IsUnique();
         });
 
         modelBuilder.Entity<User>(entity =>

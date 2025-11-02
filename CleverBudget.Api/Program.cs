@@ -254,7 +254,9 @@ try
     builder.Services.AddScoped<IExportService, ExportService>();
     builder.Services.AddScoped<IEmailService, EmailService>();
     builder.Services.AddScoped<IRecurringTransactionService, RecurringTransactionService>();
+    builder.Services.AddScoped<IBudgetService, BudgetService>();
     builder.Services.AddHostedService<RecurringTransactionGeneratorService>();
+    builder.Services.AddHostedService<BudgetAlertService>();
 
     var keysPath = Environment.GetEnvironmentVariable("DATAPROTECTION_KEYS_PATH") 
         ?? Path.Combine(Directory.GetCurrentDirectory(), "DataProtection-Keys");

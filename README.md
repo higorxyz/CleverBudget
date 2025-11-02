@@ -150,6 +150,17 @@ Documentação Swagger: **http://localhost:5000**
 - `POST /api/recurringtransactions/{id}/toggle` - Ativar/Desativar
 - `POST /api/recurringtransactions/generate` - Gerar transações manualmente
 
+### Orçamentos
+- `GET /api/budgets` - Listar orçamentos
+- `GET /api/budgets/paged` - Listar orçamentos paginados
+- `GET /api/budgets/{id}` - Buscar orçamento por ID
+- `GET /api/budgets/category/{categoryId}/period` - Buscar por categoria e período
+- `GET /api/budgets/current` - Orçamentos do mês atual
+- `GET /api/budgets/summary` - Resumo de orçamentos
+- `POST /api/budgets` - Criar orçamento
+- `PUT /api/budgets/{id}` - Atualizar orçamento
+- `DELETE /api/budgets/{id}` - Deletar orçamento
+
 ### Metas
 - `GET /api/goals` - Listar metas
 - `POST /api/goals` - Criar meta mensal
@@ -183,12 +194,12 @@ A API utiliza **JWT Bearer Token**. Para acessar endpoints protegidos:
 - ✅ Sistema de Metas
 - ✅ Relatórios Financeiros
 
-🔵 **Fase 2 — Recursos Avançados (~70% Concluído)**
+🔵 **Fase 2 — Recursos Avançados (~85% Concluído)**
 - ✅ Exportação PDF/CSV
 - ✅ Notificações por Email (Brevo)
 - ✅ Transações Recorrentes (Automáticas)
 - ✅ Background Service para geração automática
-- ⬜ Orçamentos Mensais com alertas
+- ✅ Orçamentos Mensais com alertas
 - ⬜ Perfil de Usuário (nome, email, senha, foto)
 - ✅ Validações com FluentValidation
 - ⬜ Testes unitários (70%+ cobertura)
