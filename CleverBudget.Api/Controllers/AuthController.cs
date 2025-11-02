@@ -23,10 +23,14 @@ public class AuthController : ControllerBase
     {
         var result = await _authService.RegisterAsync(registerDto);
 
-        if (result == null)
-            return BadRequest(new { message = "Falha ao registrar usuário. Verifique os dados e tente novamente." });
+        if (!result.Success)
+            return BadRequest(new 
+            { 
+                message = result.ErrorMessage,
+                errorCode = result.ErrorCode
+            });
 
-        return Ok(result);
+        return Ok(result.Data);
     }
 
     /// <summary>
@@ -37,9 +41,13 @@ public class AuthController : ControllerBase
     {
         var result = await _authService.LoginAsync(loginDto);
 
-        if (result == null)
-            return Unauthorized(new { message = "Email ou senha inválidos." });
+        if (!result.Success)
+            return Unauthorized(new 
+            { 
+                message = result.ErrorMessage,
+                errorCode = result.ErrorCode
+            });
 
-        return Ok(result);
+        return Ok(result.Data);
     }
 }

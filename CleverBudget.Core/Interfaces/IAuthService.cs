@@ -4,6 +4,6 @@ namespace CleverBudget.Core.Interfaces;
 
 public interface IAuthService
 {
-    Task<AuthResponseDto?> RegisterAsync(RegisterDto registerDto);
-    Task<AuthResponseDto?> LoginAsync(LoginDto loginDto);
+    Task<AuthResult> RegisterAsync(RegisterDto registerDto);
+    Task<AuthResult> LoginAsync(LoginDto loginDto);
 }

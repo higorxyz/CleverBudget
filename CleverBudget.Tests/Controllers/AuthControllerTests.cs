@@ -39,9 +39,15 @@ public class AuthControllerTests
             LastName = registerDto.LastName
         };
 
+        var authResult = new AuthResult
+        {
+            Success = true,
+            Data = authResponse
+        };
+
         _authServiceMock
             .Setup(s => s.RegisterAsync(registerDto))
-            .ReturnsAsync(authResponse);
+            .ReturnsAsync(authResult);
 
         // Act
         var result = await _controller.Register(registerDto);
@@ -67,9 +73,16 @@ public class AuthControllerTests
             ConfirmPassword = "Password123!"
         };
 
+        var authResult = new AuthResult
+        {
+            Success = false,
+            ErrorMessage = "Já existe uma conta com esse e-mail.",
+            ErrorCode = "EMAIL_ALREADY_EXISTS"
+        };
+
         _authServiceMock
             .Setup(s => s.RegisterAsync(registerDto))
-            .ReturnsAsync((AuthResponseDto?)null);
+            .ReturnsAsync(authResult);
 
         // Act
         var result = await _controller.Register(registerDto);
@@ -92,9 +105,16 @@ public class AuthControllerTests
             ConfirmPassword = "DifferentPassword123!"
         };
 
+        var authResult = new AuthResult
+        {
+            Success = false,
+            ErrorMessage = "As senhas não conferem.",
+            ErrorCode = "PASSWORD_MISMATCH"
+        };
+
         _authServiceMock
             .Setup(s => s.RegisterAsync(registerDto))
-            .ReturnsAsync((AuthResponseDto?)null);
+            .ReturnsAsync(authResult);
 
         // Act
         var result = await _controller.Register(registerDto);
@@ -121,9 +141,15 @@ public class AuthControllerTests
             LastName = "User"
         };
 
+        var authResult = new AuthResult
+        {
+            Success = true,
+            Data = authResponse
+        };
+
         _authServiceMock
             .Setup(s => s.LoginAsync(loginDto))
-            .ReturnsAsync(authResponse);
+            .ReturnsAsync(authResult);
 
         // Act
         var result = await _controller.Login(loginDto);
@@ -145,9 +171,16 @@ public class AuthControllerTests
             Password = "WrongPassword"
         };
 
+        var authResult = new AuthResult
+        {
+            Success = false,
+            ErrorMessage = "E-mail ou senha incorretos.",
+            ErrorCode = "INVALID_CREDENTIALS"
+        };
+
         _authServiceMock
             .Setup(s => s.LoginAsync(loginDto))
-            .ReturnsAsync((AuthResponseDto?)null);
+            .ReturnsAsync(authResult);
 
         // Act
         var result = await _controller.Login(loginDto);
@@ -167,9 +200,16 @@ public class AuthControllerTests
             Password = "Password123!"
         };
 
+        var authResult = new AuthResult
+        {
+            Success = false,
+            ErrorMessage = "E-mail ou senha incorretos.",
+            ErrorCode = "INVALID_CREDENTIALS"
+        };
+
         _authServiceMock
             .Setup(s => s.LoginAsync(loginDto))
-            .ReturnsAsync((AuthResponseDto?)null);
+            .ReturnsAsync(authResult);
 
         // Act
         var result = await _controller.Login(loginDto);
@@ -191,9 +231,15 @@ public class AuthControllerTests
             ConfirmPassword = "Password123!"
         };
 
+        var authResult = new AuthResult
+        {
+            Success = true,
+            Data = new AuthResponseDto()
+        };
+
         _authServiceMock
             .Setup(s => s.RegisterAsync(registerDto))
-            .ReturnsAsync(new AuthResponseDto());
+            .ReturnsAsync(authResult);
 
         // Act
         await _controller.Register(registerDto);
@@ -212,9 +258,15 @@ public class AuthControllerTests
             Password = "Password123!"
         };
 
+        var authResult = new AuthResult
+        {
+            Success = true,
+            Data = new AuthResponseDto()
+        };
+
         _authServiceMock
             .Setup(s => s.LoginAsync(loginDto))
-            .ReturnsAsync(new AuthResponseDto());
+            .ReturnsAsync(authResult);
 
         // Act
         await _controller.Login(loginDto);

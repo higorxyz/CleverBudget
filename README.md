@@ -124,6 +124,23 @@ Documentação Swagger: **http://localhost:5000**
 
 ---
 
+## 📚 Documentação Completa
+
+A documentação técnica completa está disponível na pasta [`/docs`](./docs/):
+
+- 📖 **[README da Documentação](./docs/README.md)** - Índice completo
+- 🚀 **[Guia de Setup](./docs/SETUP.md)** - Como configurar o ambiente
+- 🔌 **[Serviços e Dependências Externas](./docs/EXTERNAL_SERVICES.md)** - Guia completo: Brevo, Cloudinary, QuestPDF, CsvHelper e mais
+- 🏗️ **[Arquitetura](./docs/ARCHITECTURE.md)** - Estrutura e padrões do projeto
+- 🔐 **[Autenticação](./docs/AUTHENTICATION.md)** - Sistema JWT e Identity
+- 💾 **[Database Schema](./docs/DATABASE_SCHEMA.md)** - Estrutura do banco de dados
+- 📡 **[Endpoints](./docs/ENDPOINTS.md)** - Referência completa da API
+- ❌ **[Mensagens de Erro](./docs/ERROR_MESSAGES.md)** - Códigos e tratamento de erros
+- 🧪 **[Testes](./docs/TESTING.md)** - Como escrever e executar testes
+- 🚢 **[Deploy](./docs/DEPLOYMENT.md)** - Guia de deploy (Railway, Docker, Azure)
+- ⚙️ **[Variáveis de Ambiente](./docs/ENVIRONMENT_VARIABLES.md)** - Configurações necessárias
+- 🤝 **[Contribuindo](./docs/CONTRIBUTING.md)** - Como contribuir com o projeto
+
 ## 📚 Endpoints Principais
 
 ### Autenticação
@@ -172,6 +189,13 @@ Documentação Swagger: **http://localhost:5000**
 - `GET /api/reports/monthly` - Histórico mensal
 - `GET /api/reports/detailed` - Relatório completo
 
+### Perfil
+- `GET /api/profile` - Ver perfil do usuário autenticado
+- `PUT /api/profile` - Atualizar nome e sobrenome
+- `PUT /api/profile/password` - Alterar senha
+- `PUT /api/profile/photo` - Atualizar foto de perfil (URL) - DEPRECADO
+- `POST /api/profile/photo` - Upload de foto de perfil (arquivo)
+
 ---
 
 ## 🔐 Autenticação
@@ -194,15 +218,16 @@ A API utiliza **JWT Bearer Token**. Para acessar endpoints protegidos:
 - ✅ Sistema de Metas
 - ✅ Relatórios Financeiros
 
-🔵 **Fase 2 — Recursos Avançados (92% Concluído)**
+🔵 **Fase 2 — Recursos Avançados (100% Concluído)** ✅
 - ✅ Exportação PDF/CSV
 - ✅ Notificações por Email (Brevo)
 - ✅ Transações Recorrentes (Automáticas)
 - ✅ Background Service para geração automática
 - ✅ Orçamentos Mensais com alertas
-- ⬜ Perfil de Usuário (nome, email, senha, foto)
+- ✅ Perfil de Usuário (nome, email, senha, foto)
+- ✅ Upload de Foto com Cloudinary + AWS Rekognition (moderação de conteúdo)
 - ✅ Validações com FluentValidation
-- ✅ Testes unitários (293 testes - 70%+ cobertura)
+- ✅ Testes unitários (354 testes - 70%+ cobertura)
 - ✅ Rate Limiting (AspNetCoreRateLimit)
 - ✅ Deploy no Railway
 
@@ -243,13 +268,38 @@ dotnet test /p:CollectCoverage=true
 ### Railway (Recomendado)
 
 1. Conecte seu repositório GitHub ao Railway
-2. Configure as variáveis de ambiente:
-   - `DATABASE_URL` (PostgreSQL - fornecido automaticamente pelo Railway)
-   - `JwtSettings__SecretKey`
-   - `BREVO__APIKEY`
-   - `BREVO__FROMEMAIL` (recomendado - use um email válido)
-   - `BREVO__FROMNAME` (recomendado - personalize o nome)
+2. Configure as variáveis de ambiente no painel Railway:
+
+#### Variáveis Obrigatórias:
+- `DATABASE_URL` - PostgreSQL (fornecido automaticamente pelo Railway)
+- `JwtSettings__SecretKey` - Chave secreta para JWT (gere uma aleatória)
+
+#### Variáveis do Brevo (Email):
+- `Brevo__ApiKey` - API Key do Brevo
+- `Brevo__FromEmail` - Email remetente (recomendado)
+- `Brevo__FromName` - Nome do remetente (recomendado)
+
+#### Variáveis do Cloudinary (Upload de Fotos):
+- `Cloudinary__CloudName` - Nome da sua conta Cloudinary
+- `Cloudinary__ApiKey` - API Key do Cloudinary
+- `Cloudinary__ApiSecret` - API Secret do Cloudinary
+
 3. Deploy automático a cada push na `main`
+
+**📝 Nota sobre `.env`:** O arquivo `.env` é usado **APENAS em desenvolvimento local**. Em produção (Railway), as variáveis são lidas das configurações do painel e o `.env` não é utilizado nem enviado ao repositório (está no `.gitignore`).
+
+### Serviços Externos
+
+Para informações detalhadas sobre configuração do **Cloudinary**, **Brevo**, **QuestPDF** e todas as outras dependências externas, consulte:
+
+📖 **[Guia Completo de Serviços Externos](./docs/EXTERNAL_SERVICES.md)**
+
+**Resumo dos principais serviços:**
+- **Brevo** - Email transacional (300 emails/dia grátis)
+- **Cloudinary** - Upload e moderação de imagens com IA (25GB grátis)
+- **AWS Rekognition** - Moderação de conteúdo impróprio (via Cloudinary)
+- **QuestPDF** - Geração de relatórios PDF
+- **CsvHelper** - Exportação de dados em CSV
 
 ---
 

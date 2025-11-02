@@ -34,14 +34,26 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
-    public async Task<AuthResponseDto?> RegisterAsync(RegisterDto registerDto)
+    public async Task<AuthResult> RegisterAsync(RegisterDto registerDto)
     {
+        // Validar se as senhas conferem
         if (registerDto.Password != registerDto.ConfirmPassword)
-            return null;
+            return new AuthResult 
+            { 
+                Success = false, 
+                ErrorMessage = "As senhas não conferem. Por favor, digite a mesma senha nos dois campos.",
+                ErrorCode = "PASSWORD_MISMATCH"
+            };
 
+        // Verificar se já existe usuário com este email
         var existingUser = await _userManager.FindByEmailAsync(registerDto.Email);
         if (existingUser != null)
-            return null;
+            return new AuthResult 
+            { 
+                Success = false, 
+                ErrorMessage = "Já existe uma conta com esse e-mail. Tente fazer login ou use outro e-mail.",
+                ErrorCode = "EMAIL_ALREADY_EXISTS"
+            };
 
         var user = new User
         {
@@ -55,10 +67,32 @@ public class AuthService : IAuthService
         var result = await _userManager.CreateAsync(user, registerDto.Password);
 
         if (!result.Succeeded)
-            return null;
+        {
+            // Pegar o primeiro erro do Identity
+            var error = result.Errors.FirstOrDefault();
+            var errorMessage = error?.Code switch
+            {
+                "PasswordTooShort" => $"A senha deve ter no mínimo {_userManager.Options.Password.RequiredLength} caracteres.",
+                "PasswordRequiresNonAlphanumeric" => "A senha deve conter pelo menos um caractere especial (!@#$%^&*).",
+                "PasswordRequiresDigit" => "A senha deve conter pelo menos um número (0-9).",
+                "PasswordRequiresUpper" => "A senha deve conter pelo menos uma letra maiúscula (A-Z).",
+                "PasswordRequiresLower" => "A senha deve conter pelo menos uma letra minúscula (a-z).",
+                "DuplicateUserName" => "Este e-mail já está em uso. Tente fazer login ou use outro e-mail.",
+                "InvalidEmail" => "O formato do e-mail é inválido. Por favor, digite um e-mail válido.",
+                _ => error?.Description ?? "Falha ao criar conta. Verifique os dados e tente novamente."
+            };
+
+            return new AuthResult 
+            { 
+                Success = false, 
+                ErrorMessage = errorMessage,
+                ErrorCode = error?.Code ?? "REGISTRATION_FAILED"
+            };
+        }
 
         await CreateDefaultCategoriesAsync(user.Id);
 
+        // Enviar email de boas-vindas em background
         _ = Task.Run(async () =>
         {
             try
@@ -73,22 +107,41 @@ public class AuthService : IAuthService
             }
         });
 
-        return GenerateAuthResponse(user);
+        return new AuthResult
+        {
+            Success = true,
+            Data = GenerateAuthResponse(user)
+        };
     }
 
-    public async Task<AuthResponseDto?> LoginAsync(LoginDto loginDto)
+    public async Task<AuthResult> LoginAsync(LoginDto loginDto)
     {
         var user = await _userManager.FindByEmailAsync(loginDto.Email);
         
+        // Não revelar se o e-mail existe ou não por segurança
         if (user == null)
-            return null;
+            return new AuthResult 
+            { 
+                Success = false, 
+                ErrorMessage = "E-mail ou senha incorretos. Verifique seus dados e tente novamente.",
+                ErrorCode = "INVALID_CREDENTIALS"
+            };
 
         var isPasswordValid = await _userManager.CheckPasswordAsync(user, loginDto.Password);
         
         if (!isPasswordValid)
-            return null;
+            return new AuthResult 
+            { 
+                Success = false, 
+                ErrorMessage = "E-mail ou senha incorretos. Verifique seus dados e tente novamente.",
+                ErrorCode = "INVALID_CREDENTIALS"
+            };
 
-        return GenerateAuthResponse(user);
+        return new AuthResult
+        {
+            Success = true,
+            Data = GenerateAuthResponse(user)
+        };
     }
 
     private AuthResponseDto GenerateAuthResponse(User user)

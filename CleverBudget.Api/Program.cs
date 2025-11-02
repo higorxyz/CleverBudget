@@ -48,12 +48,18 @@ try
         {
             DotNetEnv.Env.Load(envPath);
             Log.Information("✅ Arquivo .env carregado com sucesso");
+            
+            // Adicionar variáveis de ambiente ao Configuration
+            builder.Configuration.AddEnvironmentVariables();
         }
         else
         {
             Log.Warning($"⚠️ Arquivo .env não encontrado em: {envPath}");
         }
     }
+
+    // Adicionar variáveis de ambiente ao Configuration (produção)
+    builder.Configuration.AddEnvironmentVariables();
 
     var port = Environment.GetEnvironmentVariable("PORT");
     if (!string.IsNullOrEmpty(port))
@@ -256,6 +262,7 @@ try
 
     builder.Services.AddScoped<IAuthService, AuthService>();
     builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+    builder.Services.AddScoped<IImageUploadService, CloudinaryImageUploadService>();
     builder.Services.AddScoped<ITransactionService, TransactionService>();
     builder.Services.AddScoped<ICategoryService, CategoryService>();
     builder.Services.AddScoped<IGoalService, GoalService>();

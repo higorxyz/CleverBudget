@@ -91,11 +91,13 @@ public class AuthServiceTests : IDisposable
         var result = await _authService.RegisterAsync(registerDto);
 
         Assert.NotNull(result);
-        Assert.Equal(registerDto.Email, result.Email);
-        Assert.Equal(registerDto.FirstName, result.FirstName);
-        Assert.Equal(registerDto.LastName, result.LastName);
-        Assert.NotEmpty(result.Token);
-        Assert.True(result.ExpiresAt > DateTime.UtcNow);
+        Assert.True(result.Success);
+        Assert.NotNull(result.Data);
+        Assert.Equal(registerDto.Email, result.Data.Email);
+        Assert.Equal(registerDto.FirstName, result.Data.FirstName);
+        Assert.Equal(registerDto.LastName, result.Data.LastName);
+        Assert.NotEmpty(result.Data.Token);
+        Assert.True(result.Data.ExpiresAt > DateTime.UtcNow);
 
         // Verify default categories were created
         var categories = await _context.Categories.ToListAsync();
@@ -119,7 +121,11 @@ public class AuthServiceTests : IDisposable
 
         var result = await _authService.RegisterAsync(registerDto);
 
-        Assert.Null(result);
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Null(result.Data);
+        Assert.NotNull(result.ErrorMessage);
+        Assert.Equal("PASSWORD_MISMATCH", result.ErrorCode);
         _userManagerMock.Verify(x => x.CreateAsync(It.IsAny<User>(), It.IsAny<string>()), Times.Never);
     }
 
@@ -142,7 +148,11 @@ public class AuthServiceTests : IDisposable
 
         var result = await _authService.RegisterAsync(registerDto);
 
-        Assert.Null(result);
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Null(result.Data);
+        Assert.NotNull(result.ErrorMessage);
+        Assert.Equal("EMAIL_ALREADY_EXISTS", result.ErrorCode);
         _userManagerMock.Verify(x => x.CreateAsync(It.IsAny<User>(), It.IsAny<string>()), Times.Never);
     }
 
@@ -168,7 +178,10 @@ public class AuthServiceTests : IDisposable
 
         var result = await _authService.RegisterAsync(registerDto);
 
-        Assert.Null(result);
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Null(result.Data);
+        Assert.NotNull(result.ErrorMessage);
     }
 
     [Fact]
@@ -200,8 +213,10 @@ public class AuthServiceTests : IDisposable
         var result = await _authService.LoginAsync(loginDto);
 
         Assert.NotNull(result);
-        Assert.Equal(loginDto.Email, result.Email);
-        Assert.NotEmpty(result.Token);
+        Assert.True(result.Success);
+        Assert.NotNull(result.Data);
+        Assert.Equal(loginDto.Email, result.Data.Email);
+        Assert.NotEmpty(result.Data.Token);
     }
 
     [Fact]
@@ -219,7 +234,11 @@ public class AuthServiceTests : IDisposable
 
         var result = await _authService.LoginAsync(loginDto);
 
-        Assert.Null(result);
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Null(result.Data);
+        Assert.NotNull(result.ErrorMessage);
+        Assert.Equal("INVALID_CREDENTIALS", result.ErrorCode);
         _userManagerMock.Verify(x => x.CheckPasswordAsync(It.IsAny<User>(), It.IsAny<string>()), Times.Never);
     }
 
@@ -251,7 +270,11 @@ public class AuthServiceTests : IDisposable
 
         var result = await _authService.LoginAsync(loginDto);
 
-        Assert.Null(result);
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Null(result.Data);
+        Assert.NotNull(result.ErrorMessage);
+        Assert.Equal("INVALID_CREDENTIALS", result.ErrorCode);
     }
 
     [Fact]
