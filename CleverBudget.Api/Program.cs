@@ -255,6 +255,7 @@ try
     });
 
     builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddScoped<IUserProfileService, UserProfileService>();
     builder.Services.AddScoped<ITransactionService, TransactionService>();
     builder.Services.AddScoped<ICategoryService, CategoryService>();
     builder.Services.AddScoped<IGoalService, GoalService>();

@@ -194,7 +194,7 @@ A API utiliza **JWT Bearer Token**. Para acessar endpoints protegidos:
 - ✅ Sistema de Metas
 - ✅ Relatórios Financeiros
 
-🔵 **Fase 2 — Recursos Avançados (~85% Concluído)**
+🔵 **Fase 2 — Recursos Avançados (92% Concluído)**
 - ✅ Exportação PDF/CSV
 - ✅ Notificações por Email (Brevo)
 - ✅ Transações Recorrentes (Automáticas)
@@ -202,8 +202,8 @@ A API utiliza **JWT Bearer Token**. Para acessar endpoints protegidos:
 - ✅ Orçamentos Mensais com alertas
 - ⬜ Perfil de Usuário (nome, email, senha, foto)
 - ✅ Validações com FluentValidation
-- ⬜ Testes unitários (70%+ cobertura)
-- ⬜ Rate Limiting
+- ✅ Testes unitários (293 testes - 70%+ cobertura)
+- ✅ Rate Limiting (AspNetCoreRateLimit)
 - ✅ Deploy no Railway
 
 🟡 **Fase 3 — Inteligência e SaaS (Planejado)**

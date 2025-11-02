@@ -6,6 +6,7 @@ public class User : IdentityUser
 {
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
+    public string? PhotoUrl { get; set; }
     public DateTime CreatedAt { get; set; }
     
     public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
