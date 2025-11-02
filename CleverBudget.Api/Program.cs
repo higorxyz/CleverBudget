@@ -19,6 +19,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using QuestPDF.Infrastructure;
+using AspNetCoreRateLimit;
 
 QuestPDF.Settings.License = LicenseType.Community;
 
@@ -176,6 +177,13 @@ try
 
     builder.Services.AddValidatorsFromAssemblyContaining<RegisterDtoValidator>();
     builder.Services.AddFluentValidationAutoValidation();
+
+    // Configuração do Rate Limiting
+    builder.Services.AddMemoryCache();
+    builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+    builder.Services.Configure<IpRateLimitPolicies>(builder.Configuration.GetSection("IpRateLimitPolicies"));
+    builder.Services.AddInMemoryRateLimiting();
+    builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 
     builder.Services.AddControllers()
         .ConfigureApiBehaviorOptions(options =>
@@ -392,6 +400,9 @@ try
     app.UseCors("AllowAll");
     app.UseSerilogRequestLogging();
 
+    // Rate Limiting Middleware
+    app.UseIpRateLimiting();
+
     app.UseAuthentication();
     app.UseAuthorization();
 
@@ -409,3 +420,6 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Torna a classe Program acessível para testes
+public partial class Program { }
