@@ -25,24 +25,14 @@ public class AppDbContext : IdentityDbContext<User>
     {
         base.OnModelCreating(modelBuilder);
 
-        var isSqlite = Database.IsSqlite();
-
+        // Configuração de Transaction
         modelBuilder.Entity<Transaction>(entity =>
         {
             entity.HasKey(t => t.Id);
             entity.Property(t => t.Amount).HasColumnType("decimal(18,2)");
-            entity.Property(t => t.Description).HasMaxLength(500);
-            
-            if (isSqlite)
-            {
-                entity.Property(t => t.CreatedAt).HasDefaultValueSql("datetime('now')");
-                entity.Property(t => t.Date).HasColumnType("TEXT");
-            }
-            else
-            {
-                entity.Property(t => t.CreatedAt).HasDefaultValueSql("NOW()");
-                entity.Property(t => t.Date).HasColumnType("timestamp");
-            }
+            entity.Property(t => t.Description).HasMaxLength(500).IsRequired();
+            entity.Property(t => t.Date).IsRequired();
+            entity.Property(t => t.CreatedAt).IsRequired();
             
             entity.HasOne(t => t.User)
                 .WithMany(u => u.Transactions)
@@ -55,21 +45,14 @@ public class AppDbContext : IdentityDbContext<User>
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // Configuração de Category
         modelBuilder.Entity<Category>(entity =>
         {
             entity.HasKey(c => c.Id);
             entity.Property(c => c.Name).HasMaxLength(100).IsRequired();
             entity.Property(c => c.Icon).HasMaxLength(50);
             entity.Property(c => c.Color).HasMaxLength(20);
-            
-            if (isSqlite)
-            {
-                entity.Property(c => c.CreatedAt).HasDefaultValueSql("datetime('now')");
-            }
-            else
-            {
-                entity.Property(c => c.CreatedAt).HasDefaultValueSql("NOW()");
-            }
+            entity.Property(c => c.CreatedAt).IsRequired();
 
             entity.HasOne(c => c.User)
                 .WithMany(u => u.Categories)
@@ -77,19 +60,12 @@ public class AppDbContext : IdentityDbContext<User>
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // Configuração de Goal
         modelBuilder.Entity<Goal>(entity =>
         {
             entity.HasKey(g => g.Id);
             entity.Property(g => g.TargetAmount).HasColumnType("decimal(18,2)");
-            
-            if (isSqlite)
-            {
-                entity.Property(g => g.CreatedAt).HasDefaultValueSql("datetime('now')");
-            }
-            else
-            {
-                entity.Property(g => g.CreatedAt).HasDefaultValueSql("NOW()");
-            }
+            entity.Property(g => g.CreatedAt).IsRequired();
 
             entity.HasOne(g => g.User)
                 .WithMany(u => u.Goals)
@@ -102,27 +78,14 @@ public class AppDbContext : IdentityDbContext<User>
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // ✨ NOVO: Configuração de RecurringTransaction
+        // Configuração de RecurringTransaction
         modelBuilder.Entity<RecurringTransaction>(entity =>
         {
             entity.HasKey(r => r.Id);
             entity.Property(r => r.Amount).HasColumnType("decimal(18,2)");
             entity.Property(r => r.Description).HasMaxLength(500).IsRequired();
-            
-            if (isSqlite)
-            {
-                entity.Property(r => r.CreatedAt).HasDefaultValueSql("datetime('now')");
-                entity.Property(r => r.StartDate).HasColumnType("TEXT");
-                entity.Property(r => r.EndDate).HasColumnType("TEXT");
-                entity.Property(r => r.LastGeneratedDate).HasColumnType("TEXT");
-            }
-            else
-            {
-                entity.Property(r => r.CreatedAt).HasDefaultValueSql("NOW()");
-                entity.Property(r => r.StartDate).HasColumnType("timestamp");
-                entity.Property(r => r.EndDate).HasColumnType("timestamp");
-                entity.Property(r => r.LastGeneratedDate).HasColumnType("timestamp");
-            }
+            entity.Property(r => r.StartDate).IsRequired();
+            entity.Property(r => r.CreatedAt).IsRequired();
 
             entity.HasOne(r => r.User)
                 .WithMany()
@@ -137,16 +100,10 @@ public class AppDbContext : IdentityDbContext<User>
             entity.HasIndex(r => new { r.UserId, r.IsActive });
         });
 
+        // Configuração de User
         modelBuilder.Entity<User>(entity =>
         {
-            if (isSqlite)
-            {
-                entity.Property(u => u.CreatedAt).HasDefaultValueSql("datetime('now')");
-            }
-            else
-            {
-                entity.Property(u => u.CreatedAt).HasDefaultValueSql("NOW()");
-            }
+            entity.Property(u => u.CreatedAt).IsRequired();
         });
     }
 }
