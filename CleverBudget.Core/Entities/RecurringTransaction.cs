@@ -22,7 +22,6 @@ public class RecurringTransaction
     public DateTime? LastGeneratedDate { get; set; }
     public DateTime CreatedAt { get; set; }
     
-    // Navegação
     public User User { get; set; } = null!;
     public Category Category { get; set; } = null!;
 }

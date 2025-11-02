@@ -38,5 +38,5 @@ public class GoalStatusDto
     public decimal Percentage { get; set; }
     public int Month { get; set; }
     public int Year { get; set; }
-    public string Status { get; set; } = string.Empty; // "OnTrack", "Warning", "Exceeded"
+    public string Status { get; set; } = string.Empty;
 }

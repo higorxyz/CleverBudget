@@ -52,5 +52,5 @@ public class PaginationParams
     }
 
     public string? SortBy { get; set; }
-    public string? SortOrder { get; set; } = "desc"; // asc ou desc
+    public string? SortOrder { get; set; } = "desc";
 }

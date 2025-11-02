@@ -25,7 +25,7 @@ public class TransactionServiceTests : IDisposable
 
         _transactionService = new TransactionService(_context);
 
-        // Setup test data
+
         _testUserId = Guid.NewGuid().ToString();
         _testCategory = new Category
         {
@@ -45,7 +45,7 @@ public class TransactionServiceTests : IDisposable
     [Fact]
     public async Task CreateAsync_ValidTransaction_ReturnsTransactionResponse()
     {
-        // Arrange
+
         var dto = new CreateTransactionDto
         {
             Amount = 150.50m,
@@ -55,10 +55,10 @@ public class TransactionServiceTests : IDisposable
             Date = DateTime.Now.AddDays(-1)
         };
 
-        // Act
+
         var result = await _transactionService.CreateAsync(dto, _testUserId);
 
-        // Assert
+
         Assert.NotNull(result);
         Assert.Equal(dto.Amount, result.Amount);
         Assert.Equal(dto.Type, result.Type);
@@ -70,7 +70,7 @@ public class TransactionServiceTests : IDisposable
     [Fact]
     public async Task CreateAsync_InvalidCategoryId_ReturnsNull()
     {
-        // Arrange
+
         var dto = new CreateTransactionDto
         {
             Amount = 100m,
@@ -80,17 +80,17 @@ public class TransactionServiceTests : IDisposable
             Date = DateTime.Now
         };
 
-        // Act
+
         var result = await _transactionService.CreateAsync(dto, _testUserId);
 
-        // Assert
+
         Assert.Null(result);
     }
 
     [Fact]
     public async Task CreateAsync_CategoryFromAnotherUser_ReturnsNull()
     {
-        // Arrange
+
         var otherUserCategory = new Category
         {
             Id = 2,
@@ -110,17 +110,17 @@ public class TransactionServiceTests : IDisposable
             Date = DateTime.Now
         };
 
-        // Act
+
         var result = await _transactionService.CreateAsync(dto, _testUserId);
 
-        // Assert
+
         Assert.Null(result);
     }
 
     [Fact]
     public async Task GetByIdAsync_ExistingTransaction_ReturnsTransaction()
     {
-        // Arrange
+
         var transaction = new Transaction
         {
             UserId = _testUserId,
@@ -134,10 +134,10 @@ public class TransactionServiceTests : IDisposable
         _context.Transactions.Add(transaction);
         await _context.SaveChangesAsync();
 
-        // Act
+
         var result = await _transactionService.GetByIdAsync(transaction.Id, _testUserId);
 
-        // Assert
+
         Assert.NotNull(result);
         Assert.Equal(transaction.Id, result.Id);
         Assert.Equal(transaction.Amount, result.Amount);
@@ -146,7 +146,7 @@ public class TransactionServiceTests : IDisposable
     [Fact]
     public async Task GetByIdAsync_TransactionFromAnotherUser_ReturnsNull()
     {
-        // Arrange
+
         var otherUserId = Guid.NewGuid().ToString();
         var transaction = new Transaction
         {
@@ -161,17 +161,17 @@ public class TransactionServiceTests : IDisposable
         _context.Transactions.Add(transaction);
         await _context.SaveChangesAsync();
 
-        // Act
+
         var result = await _transactionService.GetByIdAsync(transaction.Id, _testUserId);
 
-        // Assert
+
         Assert.Null(result);
     }
 
     [Fact]
     public async Task GetPagedAsync_ReturnsPagedResult()
     {
-        // Arrange
+
         for (int i = 1; i <= 25; i++)
         {
             _context.Transactions.Add(new Transaction
@@ -193,10 +193,10 @@ public class TransactionServiceTests : IDisposable
             PageSize = 10
         };
 
-        // Act
+
         var result = await _transactionService.GetPagedAsync(_testUserId, paginationParams);
 
-        // Assert
+
         Assert.NotNull(result);
         Assert.Equal(10, result.Items.Count);
         Assert.Equal(25, result.TotalCount);
@@ -208,7 +208,7 @@ public class TransactionServiceTests : IDisposable
     [Fact]
     public async Task GetPagedAsync_WithFilters_ReturnsFilteredResults()
     {
-        // Arrange
+
         _context.Transactions.AddRange(
             new Transaction
             {
@@ -245,14 +245,14 @@ public class TransactionServiceTests : IDisposable
 
         var paginationParams = new PaginationParams { Page = 1, PageSize = 10 };
 
-        // Act - Filtrar apenas despesas
+
         var result = await _transactionService.GetPagedAsync(
             _testUserId, 
             paginationParams, 
             type: TransactionType.Expense
         );
 
-        // Assert
+
         Assert.Equal(2, result.TotalCount);
         Assert.All(result.Items, t => Assert.Equal(TransactionType.Expense, t.Type));
     }
@@ -260,7 +260,7 @@ public class TransactionServiceTests : IDisposable
     [Fact]
     public async Task UpdateAsync_ValidData_UpdatesTransaction()
     {
-        // Arrange
+
         var transaction = new Transaction
         {
             UserId = _testUserId,
@@ -280,10 +280,10 @@ public class TransactionServiceTests : IDisposable
             Description = "Descrição Atualizada"
         };
 
-        // Act
+
         var result = await _transactionService.UpdateAsync(transaction.Id, updateDto, _testUserId);
 
-        // Assert
+
         Assert.NotNull(result);
         Assert.Equal(updateDto.Amount, result.Amount);
         Assert.Equal(updateDto.Description, result.Description);
@@ -292,23 +292,23 @@ public class TransactionServiceTests : IDisposable
     [Fact]
     public async Task UpdateAsync_TransactionNotFound_ReturnsNull()
     {
-        // Arrange
+
         var updateDto = new UpdateTransactionDto
         {
             Amount = 150m
         };
 
-        // Act
+
         var result = await _transactionService.UpdateAsync(9999, updateDto, _testUserId);
 
-        // Assert
+
         Assert.Null(result);
     }
 
     [Fact]
     public async Task DeleteAsync_ExistingTransaction_ReturnsTrue()
     {
-        // Arrange
+
         var transaction = new Transaction
         {
             UserId = _testUserId,
@@ -322,10 +322,10 @@ public class TransactionServiceTests : IDisposable
         _context.Transactions.Add(transaction);
         await _context.SaveChangesAsync();
 
-        // Act
+
         var result = await _transactionService.DeleteAsync(transaction.Id, _testUserId);
 
-        // Assert
+
         Assert.True(result);
         var deletedTransaction = await _context.Transactions.FindAsync(transaction.Id);
         Assert.Null(deletedTransaction);
@@ -334,17 +334,17 @@ public class TransactionServiceTests : IDisposable
     [Fact]
     public async Task DeleteAsync_TransactionNotFound_ReturnsFalse()
     {
-        // Act
+
         var result = await _transactionService.DeleteAsync(9999, _testUserId);
 
-        // Assert
+
         Assert.False(result);
     }
 
     [Fact]
     public async Task GetPagedAsync_SortByAmount_ReturnsSortedResults()
     {
-        // Arrange
+
         _context.Transactions.AddRange(
             new Transaction { UserId = _testUserId, Amount = 100m, Type = TransactionType.Expense, Description = "A", CategoryId = _testCategory.Id, Date = DateTime.Now, CreatedAt = DateTime.UtcNow },
             new Transaction { UserId = _testUserId, Amount = 300m, Type = TransactionType.Expense, Description = "C", CategoryId = _testCategory.Id, Date = DateTime.Now, CreatedAt = DateTime.UtcNow },
@@ -360,10 +360,10 @@ public class TransactionServiceTests : IDisposable
             SortOrder = "asc"
         };
 
-        // Act
+
         var result = await _transactionService.GetPagedAsync(_testUserId, paginationParams);
 
-        // Assert
+
         Assert.Equal(100m, result.Items[0].Amount);
         Assert.Equal(200m, result.Items[1].Amount);
         Assert.Equal(300m, result.Items[2].Amount);

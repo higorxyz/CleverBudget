@@ -49,7 +49,6 @@ public class ExportServiceTests : IDisposable
     [Fact]
     public async Task ExportTransactionsToCsvAsync_ReturnsValidCsv()
     {
-        // Arrange
         _context.Transactions.Add(new Transaction
         {
             UserId = _testUserId,
@@ -62,10 +61,8 @@ public class ExportServiceTests : IDisposable
         });
         await _context.SaveChangesAsync();
 
-        // Act
         var csv = await _exportService.ExportTransactionsToCsvAsync(_testUserId);
 
-        // Assert
         Assert.NotNull(csv);
         Assert.True(csv.Length > 0);
 
@@ -78,10 +75,8 @@ public class ExportServiceTests : IDisposable
     [Fact]
     public async Task ExportTransactionsToCsvAsync_NoTransactions_ReturnsHeaderOnly()
     {
-        // Act
         var csv = await _exportService.ExportTransactionsToCsvAsync(_testUserId);
 
-        // Assert
         Assert.NotNull(csv);
         var csvContent = Encoding.UTF8.GetString(csv);
         Assert.Contains("Data", csvContent); // Header existe
@@ -91,7 +86,6 @@ public class ExportServiceTests : IDisposable
     [Fact]
     public async Task ExportTransactionsToCsvAsync_WithDateRange_RespectsFilter()
     {
-        // Arrange
         var startDate = new DateTime(2025, 1, 1);
         var endDate = new DateTime(2025, 1, 31);
 
@@ -119,10 +113,8 @@ public class ExportServiceTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        // Act
         var csv = await _exportService.ExportTransactionsToCsvAsync(_testUserId, startDate, endDate);
 
-        // Assert
         var csvContent = Encoding.UTF8.GetString(csv);
         Assert.Contains("Janeiro", csvContent);
         Assert.DoesNotContain("Fevereiro", csvContent);
@@ -131,7 +123,6 @@ public class ExportServiceTests : IDisposable
     [Fact]
     public async Task ExportCategoriesToCsvAsync_ReturnsValidCsv()
     {
-        // Arrange
         _context.Categories.Add(new Category
         {
             UserId = _testUserId,
@@ -143,10 +134,8 @@ public class ExportServiceTests : IDisposable
         });
         await _context.SaveChangesAsync();
 
-        // Act
         var csv = await _exportService.ExportCategoriesToCsvAsync(_testUserId);
 
-        // Assert
         Assert.NotNull(csv);
         var csvContent = Encoding.UTF8.GetString(csv);
         Assert.Contains("Nome", csvContent);
@@ -158,7 +147,6 @@ public class ExportServiceTests : IDisposable
     [Fact]
     public async Task ExportGoalsToCsvAsync_ReturnsValidCsv()
     {
-        // Arrange
         _context.Goals.Add(new Goal
         {
             UserId = _testUserId,
@@ -170,10 +158,8 @@ public class ExportServiceTests : IDisposable
         });
         await _context.SaveChangesAsync();
 
-        // Act
         var csv = await _exportService.ExportGoalsToCsvAsync(_testUserId);
 
-        // Assert
         Assert.NotNull(csv);
         var csvContent = Encoding.UTF8.GetString(csv);
         Assert.Contains("Mes", csvContent);
@@ -185,17 +171,14 @@ public class ExportServiceTests : IDisposable
     [Fact]
     public async Task ExportGoalsToCsvAsync_WithFilters_ReturnsFilteredData()
     {
-        // Arrange
         _context.Goals.AddRange(
             new Goal { UserId = _testUserId, CategoryId = _testCategory.Id, TargetAmount = 500m, Month = 1, Year = 2025, CreatedAt = DateTime.UtcNow },
             new Goal { UserId = _testUserId, CategoryId = _testCategory.Id, TargetAmount = 600m, Month = 2, Year = 2025, CreatedAt = DateTime.UtcNow }
         );
         await _context.SaveChangesAsync();
 
-        // Act
         var csv = await _exportService.ExportGoalsToCsvAsync(_testUserId, month: 1, year: 2025);
 
-        // Assert
         var csvContent = Encoding.UTF8.GetString(csv);
         Assert.Contains("500", csvContent);
         Assert.DoesNotContain("600", csvContent);
@@ -208,7 +191,6 @@ public class ExportServiceTests : IDisposable
     [Fact]
     public async Task ExportTransactionsToPdfAsync_ReturnsValidPdf()
     {
-        // Arrange
         _context.Transactions.Add(new Transaction
         {
             UserId = _testUserId,
@@ -221,10 +203,8 @@ public class ExportServiceTests : IDisposable
         });
         await _context.SaveChangesAsync();
 
-        // Act
         var pdf = await _exportService.ExportTransactionsToPdfAsync(_testUserId);
 
-        // Assert
         Assert.NotNull(pdf);
         Assert.True(pdf.Length > 0);
         
@@ -236,10 +216,8 @@ public class ExportServiceTests : IDisposable
     [Fact]
     public async Task ExportTransactionsToPdfAsync_NoTransactions_ReturnsEmptyReportPdf()
     {
-        // Act
         var pdf = await _exportService.ExportTransactionsToPdfAsync(_testUserId);
 
-        // Assert
         Assert.NotNull(pdf);
         Assert.True(pdf.Length > 0); // Deve gerar PDF mesmo sem dados
         
@@ -250,17 +228,14 @@ public class ExportServiceTests : IDisposable
     [Fact]
     public async Task ExportFinancialReportToPdfAsync_ReturnsValidPdf()
     {
-        // Arrange
         _context.Transactions.AddRange(
             new Transaction { UserId = _testUserId, CategoryId = _testCategory.Id, Amount = 1000m, Type = TransactionType.Income, Description = "Receita", Date = DateTime.Now, CreatedAt = DateTime.UtcNow },
             new Transaction { UserId = _testUserId, CategoryId = _testCategory.Id, Amount = 300m, Type = TransactionType.Expense, Description = "Despesa", Date = DateTime.Now, CreatedAt = DateTime.UtcNow }
         );
         await _context.SaveChangesAsync();
 
-        // Act
         var pdf = await _exportService.ExportFinancialReportToPdfAsync(_testUserId);
 
-        // Assert
         Assert.NotNull(pdf);
         Assert.True(pdf.Length > 0);
         
@@ -271,7 +246,6 @@ public class ExportServiceTests : IDisposable
     [Fact]
     public async Task ExportGoalsReportToPdfAsync_ReturnsValidPdf()
     {
-        // Arrange
         var month = DateTime.Now.Month;
         var year = DateTime.Now.Year;
 
@@ -298,10 +272,8 @@ public class ExportServiceTests : IDisposable
         });
         await _context.SaveChangesAsync();
 
-        // Act
         var pdf = await _exportService.ExportGoalsReportToPdfAsync(_testUserId, month, year);
 
-        // Assert
         Assert.NotNull(pdf);
         Assert.True(pdf.Length > 0);
         
@@ -312,7 +284,6 @@ public class ExportServiceTests : IDisposable
     [Fact]
     public async Task ExportFinancialReportToPdfAsync_WithDateRange_RespectsFilter()
     {
-        // Arrange
         var startDate = new DateTime(2025, 1, 1);
         var endDate = new DateTime(2025, 1, 31);
 
@@ -322,10 +293,8 @@ public class ExportServiceTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        // Act
         var pdf = await _exportService.ExportFinancialReportToPdfAsync(_testUserId, startDate, endDate);
 
-        // Assert
         Assert.NotNull(pdf);
         Assert.True(pdf.Length > 0);
     }
@@ -333,14 +302,12 @@ public class ExportServiceTests : IDisposable
     [Fact]
     public async Task ExportGoalsReportToPdfAsync_NoGoals_ReturnsEmptyReportPdf()
     {
-        // Arrange
         var month = DateTime.Now.Month;
         var year = DateTime.Now.Year;
 
         // Act (sem metas cadastradas)
         var pdf = await _exportService.ExportGoalsReportToPdfAsync(_testUserId, month, year);
 
-        // Assert
         Assert.NotNull(pdf);
         Assert.True(pdf.Length > 0); // Deve gerar PDF mesmo sem metas
         
@@ -351,17 +318,14 @@ public class ExportServiceTests : IDisposable
     [Fact]
     public async Task ExportTransactionsToCsvAsync_MultipleTransactions_OrdersByDateDescending()
     {
-        // Arrange
         _context.Transactions.AddRange(
             new Transaction { UserId = _testUserId, CategoryId = _testCategory.Id, Amount = 100m, Type = TransactionType.Expense, Description = "Antiga", Date = DateTime.Now.AddDays(-10), CreatedAt = DateTime.UtcNow },
             new Transaction { UserId = _testUserId, CategoryId = _testCategory.Id, Amount = 200m, Type = TransactionType.Expense, Description = "Recente", Date = DateTime.Now, CreatedAt = DateTime.UtcNow }
         );
         await _context.SaveChangesAsync();
 
-        // Act
         var csv = await _exportService.ExportTransactionsToCsvAsync(_testUserId);
 
-        // Assert
         var csvContent = Encoding.UTF8.GetString(csv);
         var lines = csvContent.Split('\n');
         
@@ -373,17 +337,14 @@ public class ExportServiceTests : IDisposable
     [Fact]
     public async Task ExportCategoriesToCsvAsync_OrdersByName()
     {
-        // Arrange
         _context.Categories.AddRange(
             new Category { UserId = _testUserId, Name = "Zebra", CreatedAt = DateTime.UtcNow },
             new Category { UserId = _testUserId, Name = "Alpha", CreatedAt = DateTime.UtcNow }
         );
         await _context.SaveChangesAsync();
 
-        // Act
         var csv = await _exportService.ExportCategoriesToCsvAsync(_testUserId);
 
-        // Assert
         var csvContent = Encoding.UTF8.GetString(csv);
         var indexAlpha = csvContent.IndexOf("Alpha");
         var indexZebra = csvContent.IndexOf("Zebra");

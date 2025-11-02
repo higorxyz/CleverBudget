@@ -23,13 +23,11 @@ public class AuthServiceTests : IDisposable
 
     public AuthServiceTests()
     {
-        // Setup In-Memory Database
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
         _context = new AppDbContext(options);
 
-        // Mock UserManager
         var userStoreMock = new Mock<IUserStore<User>>();
         _userManagerMock = new Mock<UserManager<User>>(
             userStoreMock.Object, 
@@ -73,7 +71,6 @@ public class AuthServiceTests : IDisposable
     [Fact]
     public async Task RegisterAsync_ValidData_ReturnsAuthResponse()
     {
-        // Arrange
         var registerDto = new RegisterDto
         {
             FirstName = "João",
@@ -91,10 +88,8 @@ public class AuthServiceTests : IDisposable
             .Setup(x => x.CreateAsync(It.IsAny<User>(), registerDto.Password))
             .ReturnsAsync(IdentityResult.Success);
 
-        // Act
         var result = await _authService.RegisterAsync(registerDto);
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(registerDto.Email, result.Email);
         Assert.Equal(registerDto.FirstName, result.FirstName);
@@ -113,7 +108,6 @@ public class AuthServiceTests : IDisposable
     [Fact]
     public async Task RegisterAsync_PasswordMismatch_ReturnsNull()
     {
-        // Arrange
         var registerDto = new RegisterDto
         {
             FirstName = "Maria",
@@ -123,10 +117,8 @@ public class AuthServiceTests : IDisposable
             ConfirmPassword = "SenhaDiferente123"
         };
 
-        // Act
         var result = await _authService.RegisterAsync(registerDto);
 
-        // Assert
         Assert.Null(result);
         _userManagerMock.Verify(x => x.CreateAsync(It.IsAny<User>(), It.IsAny<string>()), Times.Never);
     }
@@ -134,7 +126,6 @@ public class AuthServiceTests : IDisposable
     [Fact]
     public async Task RegisterAsync_EmailAlreadyExists_ReturnsNull()
     {
-        // Arrange
         var registerDto = new RegisterDto
         {
             FirstName = "Pedro",
@@ -149,10 +140,8 @@ public class AuthServiceTests : IDisposable
             .Setup(x => x.FindByEmailAsync(registerDto.Email))
             .ReturnsAsync(existingUser);
 
-        // Act
         var result = await _authService.RegisterAsync(registerDto);
 
-        // Assert
         Assert.Null(result);
         _userManagerMock.Verify(x => x.CreateAsync(It.IsAny<User>(), It.IsAny<string>()), Times.Never);
     }
@@ -160,7 +149,6 @@ public class AuthServiceTests : IDisposable
     [Fact]
     public async Task RegisterAsync_CreateUserFails_ReturnsNull()
     {
-        // Arrange
         var registerDto = new RegisterDto
         {
             FirstName = "Ana",
@@ -178,17 +166,14 @@ public class AuthServiceTests : IDisposable
             .Setup(x => x.CreateAsync(It.IsAny<User>(), registerDto.Password))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Password too weak" }));
 
-        // Act
         var result = await _authService.RegisterAsync(registerDto);
 
-        // Assert
         Assert.Null(result);
     }
 
     [Fact]
     public async Task LoginAsync_ValidCredentials_ReturnsAuthResponse()
     {
-        // Arrange
         var loginDto = new LoginDto
         {
             Email = "usuario@example.com",
@@ -212,10 +197,8 @@ public class AuthServiceTests : IDisposable
             .Setup(x => x.CheckPasswordAsync(user, loginDto.Password))
             .ReturnsAsync(true);
 
-        // Act
         var result = await _authService.LoginAsync(loginDto);
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(loginDto.Email, result.Email);
         Assert.NotEmpty(result.Token);
@@ -224,7 +207,6 @@ public class AuthServiceTests : IDisposable
     [Fact]
     public async Task LoginAsync_UserNotFound_ReturnsNull()
     {
-        // Arrange
         var loginDto = new LoginDto
         {
             Email = "naoexiste@example.com",
@@ -235,10 +217,8 @@ public class AuthServiceTests : IDisposable
             .Setup(x => x.FindByEmailAsync(loginDto.Email))
             .ReturnsAsync((User?)null);
 
-        // Act
         var result = await _authService.LoginAsync(loginDto);
 
-        // Assert
         Assert.Null(result);
         _userManagerMock.Verify(x => x.CheckPasswordAsync(It.IsAny<User>(), It.IsAny<string>()), Times.Never);
     }
@@ -246,7 +226,6 @@ public class AuthServiceTests : IDisposable
     [Fact]
     public async Task LoginAsync_InvalidPassword_ReturnsNull()
     {
-        // Arrange
         var loginDto = new LoginDto
         {
             Email = "usuario@example.com",
@@ -270,17 +249,14 @@ public class AuthServiceTests : IDisposable
             .Setup(x => x.CheckPasswordAsync(user, loginDto.Password))
             .ReturnsAsync(false);
 
-        // Act
         var result = await _authService.LoginAsync(loginDto);
 
-        // Assert
         Assert.Null(result);
     }
 
     [Fact]
     public async Task RegisterAsync_SendsWelcomeEmail()
     {
-        // Arrange
         var registerDto = new RegisterDto
         {
             FirstName = "Carlos",
@@ -298,13 +274,11 @@ public class AuthServiceTests : IDisposable
             .Setup(x => x.CreateAsync(It.IsAny<User>(), registerDto.Password))
             .ReturnsAsync(IdentityResult.Success);
 
-        // Act
         var result = await _authService.RegisterAsync(registerDto);
 
         // Wait a bit for async email task
         await Task.Delay(100);
 
-        // Assert
         Assert.NotNull(result);
         _emailServiceMock.Verify(
             x => x.SendWelcomeEmailAsync(

@@ -42,7 +42,7 @@ public class ReportServiceTests : IDisposable
     [Fact]
     public async Task GetSummaryAsync_CalculatesTotalsCorrectly()
     {
-        // Arrange
+
         var startDate = DateTime.Now.AddMonths(-1);
         var endDate = DateTime.Now;
 
@@ -54,10 +54,10 @@ public class ReportServiceTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        // Act
+
         var result = await _reportService.GetSummaryAsync(_testUserId, startDate, endDate);
 
-        // Assert
+
         Assert.Equal(1500m, result.TotalIncome); // 1000 + 500
         Assert.Equal(500m, result.TotalExpenses); // 300 + 200
         Assert.Equal(1000m, result.Balance); // 1500 - 500
@@ -67,14 +67,14 @@ public class ReportServiceTests : IDisposable
     [Fact]
     public async Task GetSummaryAsync_NoTransactions_ReturnsZero()
     {
-        // Arrange
+
         var startDate = DateTime.Now.AddMonths(-1);
         var endDate = DateTime.Now;
 
-        // Act (sem transações)
+
         var result = await _reportService.GetSummaryAsync(_testUserId, startDate, endDate);
 
-        // Assert
+
         Assert.Equal(0m, result.TotalIncome);
         Assert.Equal(0m, result.TotalExpenses);
         Assert.Equal(0m, result.Balance);
@@ -84,7 +84,7 @@ public class ReportServiceTests : IDisposable
     [Fact]
     public async Task GetCategoryReportAsync_GroupsByCategory()
     {
-        // Arrange
+
         var category2 = new Category { Id = 2, UserId = _testUserId, Name = "Transporte", Icon = "🚗", CreatedAt = DateTime.UtcNow };
         _context.Categories.Add(category2);
 
@@ -95,10 +95,10 @@ public class ReportServiceTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        // Act
+
         var result = await _reportService.GetCategoryReportAsync(_testUserId);
 
-        // Assert
+
         Assert.Equal(2, result.Count());
 
         var alimentacao = result.First(r => r.CategoryName == "Alimentação");
@@ -114,17 +114,17 @@ public class ReportServiceTests : IDisposable
     [Fact]
     public async Task GetCategoryReportAsync_ExpensesOnly_IgnoresIncome()
     {
-        // Arrange
+
         _context.Transactions.AddRange(
             new Transaction { UserId = _testUserId, CategoryId = _testCategory.Id, Amount = 300m, Type = TransactionType.Expense, Description = "Despesa", Date = DateTime.Now, CreatedAt = DateTime.UtcNow },
             new Transaction { UserId = _testUserId, CategoryId = _testCategory.Id, Amount = 1000m, Type = TransactionType.Income, Description = "Receita", Date = DateTime.Now, CreatedAt = DateTime.UtcNow }
         );
         await _context.SaveChangesAsync();
 
-        // Act
+
         var result = await _reportService.GetCategoryReportAsync(_testUserId, expensesOnly: true);
 
-        // Assert
+
         Assert.Single(result);
         Assert.Equal(300m, result.First().TotalAmount); // Apenas despesa
     }
@@ -132,17 +132,17 @@ public class ReportServiceTests : IDisposable
     [Fact]
     public async Task GetCategoryReportAsync_IncludesIncome_WhenExpensesOnlyIsFalse()
     {
-        // Arrange
+
         _context.Transactions.AddRange(
             new Transaction { UserId = _testUserId, CategoryId = _testCategory.Id, Amount = 300m, Type = TransactionType.Expense, Description = "Despesa", Date = DateTime.Now, CreatedAt = DateTime.UtcNow },
             new Transaction { UserId = _testUserId, CategoryId = _testCategory.Id, Amount = 1000m, Type = TransactionType.Income, Description = "Receita", Date = DateTime.Now, CreatedAt = DateTime.UtcNow }
         );
         await _context.SaveChangesAsync();
 
-        // Act
+
         var result = await _reportService.GetCategoryReportAsync(_testUserId, expensesOnly: false);
 
-        // Assert
+
         Assert.Single(result);
         Assert.Equal(1300m, result.First().TotalAmount); // Despesa + Receita
         Assert.Equal(2, result.First().TransactionCount);
@@ -151,7 +151,7 @@ public class ReportServiceTests : IDisposable
     [Fact]
     public async Task GetMonthlyReportAsync_ReturnsMonthlyBreakdown()
     {
-        // Arrange
+
         var baseDate = DateTime.Now;
         _context.Transactions.AddRange(
             // Mês atual
@@ -163,10 +163,10 @@ public class ReportServiceTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        // Act
+
         var result = await _reportService.GetMonthlyReportAsync(_testUserId, months: 2);
 
-        // Assert
+
         Assert.Equal(2, result.Count());
 
         var thisMonth = result.First(r => r.Month == baseDate.Month);
@@ -183,17 +183,17 @@ public class ReportServiceTests : IDisposable
     [Fact]
     public async Task GetDetailedReportAsync_ReturnsCompleteReport()
     {
-        // Arrange
+
         _context.Transactions.AddRange(
             new Transaction { UserId = _testUserId, CategoryId = _testCategory.Id, Amount = 1000m, Type = TransactionType.Income, Description = "Salário", Date = DateTime.Now, CreatedAt = DateTime.UtcNow },
             new Transaction { UserId = _testUserId, CategoryId = _testCategory.Id, Amount = 300m, Type = TransactionType.Expense, Description = "Mercado", Date = DateTime.Now, CreatedAt = DateTime.UtcNow }
         );
         await _context.SaveChangesAsync();
 
-        // Act
+
         var result = await _reportService.GetDetailedReportAsync(_testUserId);
 
-        // Assert
+
         Assert.NotNull(result.Summary);
         Assert.Equal(1000m, result.Summary.TotalIncome);
         Assert.Equal(300m, result.Summary.TotalExpenses);
@@ -206,22 +206,22 @@ public class ReportServiceTests : IDisposable
     [Fact]
     public async Task GetSummaryAsync_RespectsDateRange()
     {
-        // Arrange
+
         var startDate = new DateTime(2025, 1, 1);
         var endDate = new DateTime(2025, 1, 31);
 
         _context.Transactions.AddRange(
-            // Dentro do período
+
             new Transaction { UserId = _testUserId, CategoryId = _testCategory.Id, Amount = 500m, Type = TransactionType.Income, Description = "Janeiro", Date = new DateTime(2025, 1, 15), CreatedAt = DateTime.UtcNow },
-            // Fora do período
+
             new Transaction { UserId = _testUserId, CategoryId = _testCategory.Id, Amount = 1000m, Type = TransactionType.Income, Description = "Fevereiro", Date = new DateTime(2025, 2, 1), CreatedAt = DateTime.UtcNow }
         );
         await _context.SaveChangesAsync();
 
-        // Act
+
         var result = await _reportService.GetSummaryAsync(_testUserId, startDate, endDate);
 
-        // Assert
+
         Assert.Equal(500m, result.TotalIncome); // Apenas janeiro
         Assert.Equal(1, result.TransactionCount);
     }
@@ -229,7 +229,7 @@ public class ReportServiceTests : IDisposable
     [Fact]
     public async Task GetCategoryReportAsync_OrdersByTotalAmountDescending()
     {
-        // Arrange
+
         var cat2 = new Category { Id = 2, UserId = _testUserId, Name = "Transporte", CreatedAt = DateTime.UtcNow };
         var cat3 = new Category { Id = 3, UserId = _testUserId, Name = "Lazer", CreatedAt = DateTime.UtcNow };
         _context.Categories.AddRange(cat2, cat3);
@@ -241,10 +241,10 @@ public class ReportServiceTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        // Act
+
         var result = await _reportService.GetCategoryReportAsync(_testUserId);
 
-        // Assert
+
         var list = result.ToList();
         Assert.Equal(300m, list[0].TotalAmount); // Maior primeiro
         Assert.Equal(200m, list[1].TotalAmount);

@@ -13,7 +13,7 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<Transaction> Transactions { get; set; }
     public DbSet<Category> Categories { get; set; }
     public DbSet<Goal> Goals { get; set; }
-    public DbSet<RecurringTransaction> RecurringTransactions { get; set; } // ✨ NOVO
+    public DbSet<RecurringTransaction> RecurringTransactions { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -25,7 +25,6 @@ public class AppDbContext : IdentityDbContext<User>
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configuração de Transaction
         modelBuilder.Entity<Transaction>(entity =>
         {
             entity.HasKey(t => t.Id);
@@ -45,7 +44,6 @@ public class AppDbContext : IdentityDbContext<User>
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // Configuração de Category
         modelBuilder.Entity<Category>(entity =>
         {
             entity.HasKey(c => c.Id);
@@ -61,7 +59,6 @@ public class AppDbContext : IdentityDbContext<User>
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Configuração de Goal
         modelBuilder.Entity<Goal>(entity =>
         {
             entity.HasKey(g => g.Id);
@@ -79,7 +76,6 @@ public class AppDbContext : IdentityDbContext<User>
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // Configuração de RecurringTransaction
         modelBuilder.Entity<RecurringTransaction>(entity =>
         {
             entity.HasKey(r => r.Id);
@@ -102,7 +98,6 @@ public class AppDbContext : IdentityDbContext<User>
             entity.HasIndex(r => new { r.UserId, r.IsActive });
         });
 
-        // Configuração de User
         modelBuilder.Entity<User>(entity =>
         {
             entity.Property(u => u.CreatedAt).IsRequired();

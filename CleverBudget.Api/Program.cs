@@ -246,7 +246,6 @@ try
         });
     });
 
-    // ✨ Serviços existentes
     builder.Services.AddScoped<IAuthService, AuthService>();
     builder.Services.AddScoped<ITransactionService, TransactionService>();
     builder.Services.AddScoped<ICategoryService, CategoryService>();
@@ -254,11 +253,7 @@ try
     builder.Services.AddScoped<IReportService, ReportService>();
     builder.Services.AddScoped<IExportService, ExportService>();
     builder.Services.AddScoped<IEmailService, EmailService>();
-    
-    // ✨ NOVO: Serviço de Transações Recorrentes
     builder.Services.AddScoped<IRecurringTransactionService, RecurringTransactionService>();
-    
-    // ✨ NOVO: Background Service para gerar transações automaticamente
     builder.Services.AddHostedService<RecurringTransactionGeneratorService>();
 
     var keysPath = Environment.GetEnvironmentVariable("DATAPROTECTION_KEYS_PATH") 

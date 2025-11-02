@@ -142,6 +142,14 @@ Documentação Swagger: **http://localhost:5000**
 - `PUT /api/categories/{id}` - Atualizar categoria
 - `DELETE /api/categories/{id}` - Deletar categoria
 
+### Transações Recorrentes
+- `GET /api/recurringtransactions` - Listar transações recorrentes
+- `POST /api/recurringtransactions` - Criar transação recorrente
+- `PUT /api/recurringtransactions/{id}` - Atualizar transação recorrente
+- `DELETE /api/recurringtransactions/{id}` - Deletar transação recorrente
+- `POST /api/recurringtransactions/{id}/toggle` - Ativar/Desativar
+- `POST /api/recurringtransactions/generate` - Gerar transações manualmente
+
 ### Metas
 - `GET /api/goals` - Listar metas
 - `POST /api/goals` - Criar meta mensal
@@ -175,10 +183,11 @@ A API utiliza **JWT Bearer Token**. Para acessar endpoints protegidos:
 - ✅ Sistema de Metas
 - ✅ Relatórios Financeiros
 
-🔵 **Fase 2 — Recursos Avançados (~60% Concluído)**
+🔵 **Fase 2 — Recursos Avançados (~70% Concluído)**
 - ✅ Exportação PDF/CSV
 - ✅ Notificações por Email (Brevo)
-- ⬜ Transações Recorrentes
+- ✅ Transações Recorrentes (Automáticas)
+- ✅ Background Service para geração automática
 - ⬜ Orçamentos Mensais com alertas
 - ⬜ Perfil de Usuário (nome, email, senha, foto)
 - ✅ Validações com FluentValidation

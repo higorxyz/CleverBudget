@@ -44,7 +44,7 @@ public class GoalServiceTests : IDisposable
     [Fact]
     public async Task CreateAsync_ValidGoal_ReturnsGoalResponse()
     {
-        // Arrange
+
         var dto = new CreateGoalDto
         {
             CategoryId = _testCategory.Id,
@@ -53,10 +53,10 @@ public class GoalServiceTests : IDisposable
             Year = DateTime.Now.Year
         };
 
-        // Act
+
         var result = await _goalService.CreateAsync(dto, _testUserId);
 
-        // Assert
+
         Assert.NotNull(result);
         Assert.Equal(dto.CategoryId, result.CategoryId);
         Assert.Equal(dto.TargetAmount, result.TargetAmount);
@@ -68,7 +68,7 @@ public class GoalServiceTests : IDisposable
     [Fact]
     public async Task CreateAsync_InvalidCategoryId_ReturnsNull()
     {
-        // Arrange
+
         var dto = new CreateGoalDto
         {
             CategoryId = 9999, // Não existe
@@ -77,17 +77,17 @@ public class GoalServiceTests : IDisposable
             Year = DateTime.Now.Year
         };
 
-        // Act
+
         var result = await _goalService.CreateAsync(dto, _testUserId);
 
-        // Assert
+
         Assert.Null(result);
     }
 
     [Fact]
     public async Task CreateAsync_DuplicateGoal_ReturnsNull()
     {
-        // Arrange
+
         var month = DateTime.Now.Month;
         var year = DateTime.Now.Year;
 
@@ -111,17 +111,17 @@ public class GoalServiceTests : IDisposable
             Year = year
         };
 
-        // Act
+
         var result = await _goalService.CreateAsync(dto, _testUserId);
 
-        // Assert
+
         Assert.Null(result); // Não pode criar meta duplicada
     }
 
     [Fact]
     public async Task GetStatusAsync_CalculatesProgressCorrectly()
     {
-        // Arrange
+
         var month = DateTime.Now.Month;
         var year = DateTime.Now.Year;
 
@@ -136,7 +136,7 @@ public class GoalServiceTests : IDisposable
         };
         _context.Goals.Add(goal);
 
-        // Adicionar transações de despesa no mês
+
         var startDate = new DateTime(year, month, 1);
         var endDate = startDate.AddMonths(1).AddDays(-1);
 
@@ -164,10 +164,10 @@ public class GoalServiceTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        // Act
+
         var result = await _goalService.GetStatusAsync(_testUserId, month, year);
 
-        // Assert
+
         var goalStatus = result.FirstOrDefault();
         Assert.NotNull(goalStatus);
         Assert.Equal(500m, goalStatus.CurrentAmount); // 300 + 200
@@ -178,7 +178,7 @@ public class GoalServiceTests : IDisposable
     [Fact]
     public async Task GetStatusAsync_StatusWarning_At80Percent()
     {
-        // Arrange
+
         var month = DateTime.Now.Month;
         var year = DateTime.Now.Year;
 
@@ -193,7 +193,7 @@ public class GoalServiceTests : IDisposable
         };
         _context.Goals.Add(goal);
 
-        // Gastar 850 (85% da meta)
+
         var startDate = new DateTime(year, month, 1);
         _context.Transactions.Add(new Transaction
         {
@@ -207,10 +207,10 @@ public class GoalServiceTests : IDisposable
         });
         await _context.SaveChangesAsync();
 
-        // Act
+
         var result = await _goalService.GetStatusAsync(_testUserId, month, year);
 
-        // Assert
+
         var goalStatus = result.FirstOrDefault();
         Assert.NotNull(goalStatus);
         Assert.Equal(850m, goalStatus.CurrentAmount);
@@ -221,7 +221,7 @@ public class GoalServiceTests : IDisposable
     [Fact]
     public async Task GetStatusAsync_StatusExceeded_AtOrAbove100Percent()
     {
-        // Arrange
+
         var month = DateTime.Now.Month;
         var year = DateTime.Now.Year;
 
@@ -236,7 +236,7 @@ public class GoalServiceTests : IDisposable
         };
         _context.Goals.Add(goal);
 
-        // Gastar 1200 (120% da meta)
+
         var startDate = new DateTime(year, month, 1);
         _context.Transactions.Add(new Transaction
         {
@@ -250,10 +250,10 @@ public class GoalServiceTests : IDisposable
         });
         await _context.SaveChangesAsync();
 
-        // Act
+
         var result = await _goalService.GetStatusAsync(_testUserId, month, year);
 
-        // Assert
+
         var goalStatus = result.FirstOrDefault();
         Assert.NotNull(goalStatus);
         Assert.Equal(1200m, goalStatus.CurrentAmount);
@@ -264,7 +264,7 @@ public class GoalServiceTests : IDisposable
     [Fact]
     public async Task GetStatusAsync_IgnoresIncomeTransactions()
     {
-        // Arrange
+
         var month = DateTime.Now.Month;
         var year = DateTime.Now.Year;
 
@@ -304,10 +304,10 @@ public class GoalServiceTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        // Act
+
         var result = await _goalService.GetStatusAsync(_testUserId, month, year);
 
-        // Assert
+
         var goalStatus = result.FirstOrDefault();
         Assert.NotNull(goalStatus);
         Assert.Equal(300m, goalStatus.CurrentAmount); // Apenas a despesa
@@ -317,7 +317,7 @@ public class GoalServiceTests : IDisposable
     [Fact]
     public async Task UpdateAsync_ValidData_UpdatesGoal()
     {
-        // Arrange
+
         var goal = new Goal
         {
             UserId = _testUserId,
@@ -335,10 +335,10 @@ public class GoalServiceTests : IDisposable
             TargetAmount = 800m
         };
 
-        // Act
+
         var result = await _goalService.UpdateAsync(goal.Id, updateDto, _testUserId);
 
-        // Assert
+
         Assert.NotNull(result);
         Assert.Equal(updateDto.TargetAmount, result.TargetAmount);
     }
@@ -346,23 +346,23 @@ public class GoalServiceTests : IDisposable
     [Fact]
     public async Task UpdateAsync_GoalNotFound_ReturnsNull()
     {
-        // Arrange
+
         var updateDto = new UpdateGoalDto
         {
             TargetAmount = 800m
         };
 
-        // Act
+
         var result = await _goalService.UpdateAsync(9999, updateDto, _testUserId);
 
-        // Assert
+
         Assert.Null(result);
     }
 
     [Fact]
     public async Task DeleteAsync_ExistingGoal_ReturnsTrue()
     {
-        // Arrange
+
         var goal = new Goal
         {
             UserId = _testUserId,
@@ -375,10 +375,10 @@ public class GoalServiceTests : IDisposable
         _context.Goals.Add(goal);
         await _context.SaveChangesAsync();
 
-        // Act
+
         var result = await _goalService.DeleteAsync(goal.Id, _testUserId);
 
-        // Assert
+
         Assert.True(result);
         var deletedGoal = await _context.Goals.FindAsync(goal.Id);
         Assert.Null(deletedGoal);
@@ -387,17 +387,17 @@ public class GoalServiceTests : IDisposable
     [Fact]
     public async Task DeleteAsync_GoalNotFound_ReturnsFalse()
     {
-        // Act
+
         var result = await _goalService.DeleteAsync(9999, _testUserId);
 
-        // Assert
+
         Assert.False(result);
     }
 
     [Fact]
     public async Task GetPagedAsync_ReturnsPagedResults()
     {
-        // Arrange
+
         for (int i = 1; i <= 15; i++)
         {
             _context.Goals.Add(new Goal
@@ -418,10 +418,10 @@ public class GoalServiceTests : IDisposable
             PageSize = 10
         };
 
-        // Act
+
         var result = await _goalService.GetPagedAsync(_testUserId, paginationParams);
 
-        // Assert
+
         Assert.NotNull(result);
         Assert.Equal(10, result.Items.Count);
         Assert.Equal(15, result.TotalCount);
@@ -432,7 +432,7 @@ public class GoalServiceTests : IDisposable
     [Fact]
     public async Task GetPagedAsync_WithMonthFilter_ReturnsFilteredResults()
     {
-        // Arrange
+
         _context.Goals.AddRange(
             new Goal { UserId = _testUserId, CategoryId = _testCategory.Id, TargetAmount = 100m, Month = 1, Year = 2025, CreatedAt = DateTime.UtcNow },
             new Goal { UserId = _testUserId, CategoryId = _testCategory.Id, TargetAmount = 200m, Month = 2, Year = 2025, CreatedAt = DateTime.UtcNow },
@@ -442,10 +442,10 @@ public class GoalServiceTests : IDisposable
 
         var paginationParams = new PaginationParams { Page = 1, PageSize = 10 };
 
-        // Act
+
         var result = await _goalService.GetPagedAsync(_testUserId, paginationParams, month: 1);
 
-        // Assert
+
         Assert.Equal(2, result.TotalCount);
         Assert.All(result.Items, g => Assert.Equal(1, g.Month));
     }
@@ -453,7 +453,7 @@ public class GoalServiceTests : IDisposable
     [Fact]
     public async Task GetStatusAsync_MultipleGoals_ReturnsSortedByPercentage()
     {
-        // Arrange
+
         var month = DateTime.Now.Month;
         var year = DateTime.Now.Year;
 
@@ -478,10 +478,10 @@ public class GoalServiceTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        // Act
+
         var result = await _goalService.GetStatusAsync(_testUserId, month, year);
 
-        // Assert
+
         Assert.Equal(2, result.Count());
         // Deve vir ordenado por percentual (decrescente)
         var goals = result.ToList();
@@ -491,7 +491,7 @@ public class GoalServiceTests : IDisposable
     [Fact]
     public async Task GetStatusAsync_NoTransactions_ReturnsZeroProgress()
     {
-        // Arrange
+
         var month = DateTime.Now.Month;
         var year = DateTime.Now.Year;
 
@@ -507,10 +507,10 @@ public class GoalServiceTests : IDisposable
         _context.Goals.Add(goal);
         await _context.SaveChangesAsync();
 
-        // Act (sem adicionar transações)
+
         var result = await _goalService.GetStatusAsync(_testUserId, month, year);
 
-        // Assert
+
         var goalStatus = result.FirstOrDefault();
         Assert.NotNull(goalStatus);
         Assert.Equal(0m, goalStatus.CurrentAmount);
