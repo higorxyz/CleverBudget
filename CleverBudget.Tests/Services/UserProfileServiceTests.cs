@@ -2,6 +2,7 @@ using CleverBudget.Core.Entities;
 using CleverBudget.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 using CleverBudget.Core.DTOs;
@@ -14,12 +15,19 @@ public class UserProfileServiceTests : IDisposable
     private readonly Mock<ILogger<UserProfileService>> _mockLogger;
     private readonly UserProfileService _service;
     private const string TestUserId = "test-user-id";
-
     public UserProfileServiceTests()
     {
         var store = new Mock<IUserStore<User>>();
         _mockUserManager = new Mock<UserManager<User>>(
-            store.Object, null, null, null, null, null, null, null, null);
+            store.Object, 
+            new Mock<IOptions<IdentityOptions>>().Object,
+            new Mock<IPasswordHasher<User>>().Object,
+            new[] { new Mock<IUserValidator<User>>().Object },
+            new[] { new Mock<IPasswordValidator<User>>().Object },
+            new Mock<ILookupNormalizer>().Object,
+            new Mock<IdentityErrorDescriber>().Object,
+            new Mock<IServiceProvider>().Object,
+            new Mock<ILogger<UserManager<User>>>().Object);
         _mockLogger = new Mock<ILogger<UserProfileService>>();
         _service = new UserProfileService(_mockUserManager.Object, _mockLogger.Object);
     }
