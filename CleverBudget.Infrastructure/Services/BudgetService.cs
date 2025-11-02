@@ -203,7 +203,7 @@ public class BudgetService : IBudgetService
 
     public async Task<decimal> GetTotalSpentForMonthAsync(string userId, int month, int year)
     {
-        var startDate = new DateTime(year, month, 1);
+        var startDate = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
         var endDate = startDate.AddMonths(1).AddDays(-1);
 
         return await _context.Transactions
@@ -260,7 +260,7 @@ public class BudgetService : IBudgetService
 
     private async Task<decimal> GetSpentForCategoryAsync(string userId, int categoryId, int month, int year)
     {
-        var startDate = new DateTime(year, month, 1);
+        var startDate = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
         var endDate = startDate.AddMonths(1).AddDays(-1);
 
         return await _context.Transactions

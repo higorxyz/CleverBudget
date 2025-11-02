@@ -109,7 +109,7 @@ public class BudgetAlertService : BackgroundService
 
     private async Task<decimal> GetSpentForBudgetAsync(Budget budget, AppDbContext context)
     {
-        var startDate = new DateTime(budget.Year, budget.Month, 1);
+        var startDate = new DateTime(budget.Year, budget.Month, 1, 0, 0, 0, DateTimeKind.Utc);
         var endDate = startDate.AddMonths(1).AddDays(-1);
 
         return await context.Transactions
