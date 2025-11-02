@@ -52,6 +52,7 @@ public class AppDbContext : IdentityDbContext<User>
             entity.Property(c => c.Name).HasMaxLength(100).IsRequired();
             entity.Property(c => c.Icon).HasMaxLength(50);
             entity.Property(c => c.Color).HasMaxLength(20);
+            entity.Property(c => c.IsDefault).HasConversion<bool>();
             entity.Property(c => c.CreatedAt).IsRequired();
 
             entity.HasOne(c => c.User)
@@ -84,6 +85,7 @@ public class AppDbContext : IdentityDbContext<User>
             entity.HasKey(r => r.Id);
             entity.Property(r => r.Amount).HasColumnType("decimal(18,2)");
             entity.Property(r => r.Description).HasMaxLength(500).IsRequired();
+            entity.Property(r => r.IsActive).HasConversion<bool>();
             entity.Property(r => r.StartDate).IsRequired();
             entity.Property(r => r.CreatedAt).IsRequired();
 

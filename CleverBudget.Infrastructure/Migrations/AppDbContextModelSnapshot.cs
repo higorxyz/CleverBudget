@@ -50,7 +50,7 @@ namespace CleverBudget.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Categories");
+                    b.ToTable("Categories", (string)null);
                 });
 
             modelBuilder.Entity("CleverBudget.Core.Entities.Goal", b =>
@@ -84,7 +84,7 @@ namespace CleverBudget.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Goals");
+                    b.ToTable("Goals", (string)null);
                 });
 
             modelBuilder.Entity("CleverBudget.Core.Entities.RecurringTransaction", b =>
@@ -141,7 +141,7 @@ namespace CleverBudget.Infrastructure.Migrations
 
                     b.HasIndex("UserId", "IsActive");
 
-                    b.ToTable("RecurringTransactions");
+                    b.ToTable("RecurringTransactions", (string)null);
                 });
 
             modelBuilder.Entity("CleverBudget.Core.Entities.Transaction", b =>
@@ -180,7 +180,7 @@ namespace CleverBudget.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Transactions");
+                    b.ToTable("Transactions", (string)null);
                 });
 
             modelBuilder.Entity("CleverBudget.Core.Entities.User", b =>
