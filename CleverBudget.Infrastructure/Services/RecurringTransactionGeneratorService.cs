@@ -27,7 +27,7 @@ public class RecurringTransactionGeneratorService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("🔄 RecurringTransactionGenerator iniciado - Verificação a cada {Interval}", _interval);
+        _logger.LogInformation("🔄 Serviço de transações recorrentes iniciado");
 
         // Aguardar 10 segundos antes da primeira execução (evitar corrida no startup)
         await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);

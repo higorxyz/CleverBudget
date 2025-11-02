@@ -77,17 +77,11 @@ try
     if (!string.IsNullOrEmpty(railwayConnectionString))
     {
         databaseUrl = railwayConnectionString;
-        Log.Information("🔍 Usando ConnectionStrings__DefaultConnection do Railway");
     }
 
     if (builder.Environment.IsProduction())
     {
         Log.Information($"🔍 Ambiente: {builder.Environment.EnvironmentName}");
-        Log.Information($"🔍 DATABASE_URL presente: {!string.IsNullOrEmpty(databaseUrl)}");
-        if (!string.IsNullOrEmpty(databaseUrl))
-        {
-            Log.Information($"🔍 Database URL: {databaseUrl.Substring(0, Math.Min(50, databaseUrl.Length))}...");
-        }
 
         string finalConnectionString;
 
@@ -97,8 +91,7 @@ try
             var userInfo = uri.UserInfo.Split(':');
             finalConnectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
 
-            Log.Information("🗄️ Usando PostgreSQL via DATABASE_URL");
-            Log.Information($"🔍 Connection string: Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')}");
+            Log.Information("🗄️ Banco de dados: PostgreSQL");
         }
         else
         {
@@ -108,18 +101,11 @@ try
             var pgUser = Environment.GetEnvironmentVariable("PGUSER");
             var pgPassword = Environment.GetEnvironmentVariable("PGPASSWORD");
 
-            Log.Information($"🔍 PGHOST: {pgHost}");
-            Log.Information($"🔍 PGPORT: {pgPort}");
-            Log.Information($"🔍 PGDATABASE: {pgDatabase}");
-            Log.Information($"🔍 PGUSER: {pgUser}");
-            Log.Information($"🔍 PGPASSWORD presente: {!string.IsNullOrEmpty(pgPassword)}");
-
             if (!string.IsNullOrEmpty(pgHost) && !string.IsNullOrEmpty(pgDatabase) && !string.IsNullOrEmpty(pgUser) && !string.IsNullOrEmpty(pgPassword))
             {
                 finalConnectionString = $"Host={pgHost};Port={pgPort ?? "5432"};Database={pgDatabase};Username={pgUser};Password={pgPassword};SSL Mode=Require;Trust Server Certificate=true";
 
-                Log.Information("🗄️ Usando PostgreSQL via variáveis individuais");
-                Log.Information($"🔍 Connection string: Host={pgHost};Port={pgPort ?? "5432"};Database={pgDatabase}");
+                Log.Information("🗄️ Banco de dados: PostgreSQL");
             }
             else
             {
@@ -137,8 +123,7 @@ try
         builder.Services.AddDbContext<AppDbContext>(options =>
             options.UseSqlite(sqliteConnectionString));
 
-        Log.Information("🗄️ Usando SQLite (Desenvolvimento)");
-        Log.Information($"🔍 Connection string: {sqliteConnectionString}");
+        Log.Information("🗄️ Banco de dados: SQLite (Desenvolvimento)");
     }
     
     builder.Services.AddIdentity<User, IdentityRole>(options =>
@@ -282,8 +267,6 @@ try
         Directory.CreateDirectory(keysPath);
     }
 
-    Log.Information($"🔑 Data Protection Keys Path: {keysPath}");
-
     if (builder.Environment.IsProduction())
     {
         var rsa = RSA.Create(2048);
@@ -300,8 +283,6 @@ try
             .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
             .SetApplicationName("CleverBudget")
             .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
-        
-        Log.Information("⚙️ Data Protection configurado para desenvolvimento (chaves não criptografadas)");
     }
 
     var app = builder.Build();
@@ -314,80 +295,67 @@ try
             try
             {
                 var canConnect = db.Database.CanConnect();
-                Log.Information($"🔍 Conexão com banco: {(canConnect ? "OK" : "FALHA")}");
-
-                if (canConnect)
+                
+                if (!canConnect)
                 {
-                    string tableCheckQuery;
-                    if (builder.Environment.IsProduction())
-                    {
-                        tableCheckQuery = "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'";
-                    }
-                    else
-                    {
-                        tableCheckQuery = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'";
-                    }
+                    Log.Error("❌ Falha ao conectar ao banco de dados");
+                    throw new InvalidOperationException("Não foi possível conectar ao banco de dados");
+                }
+
+                Log.Information("✅ Conexão com banco estabelecida");
+
+                if (builder.Environment.IsProduction())
+                {
+                    var tableCheckQuery = "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'";
                     var hasTables = db.Database.SqlQueryRaw<int>(tableCheckQuery).ToList().FirstOrDefault() > 0;
-                    Log.Information($"🔍 Banco já tem tabelas: {(hasTables ? "SIM" : "NÃO")}");
 
                     if (hasTables)
                     {
                         var pendingMigrations = db.Database.GetPendingMigrations().ToList();
-                        Log.Information($"🔍 Migrations pendentes: {pendingMigrations.Count}");
 
                         if (pendingMigrations.Any())
                         {
-                            Log.Information("🔄 Aplicando migrations pendentes...");
+                            Log.Information($"🔄 Aplicando {pendingMigrations.Count} migration(s) pendente(s)...");
                             try
                             {
                                 db.Database.Migrate();
-                                Log.Information("✅ Migrations aplicadas com sucesso!");
+                                Log.Information("✅ Migrations aplicadas com sucesso");
                             }
                             catch (Exception migrateEx)
                             {
-                                Log.Warning(migrateEx, "⚠️ Erro ao aplicar migrations, assumindo que o banco já está configurado: {Message}", migrateEx.Message);
+                                Log.Warning(migrateEx, "⚠️ Erro ao aplicar migrations: {Message}", migrateEx.Message);
                             }
                         }
                         else
                         {
-                            Log.Information("✅ Banco de dados já está atualizado!");
+                            Log.Information("✅ Banco de dados atualizado");
                         }
                     }
                     else
                     {
-                        Log.Information("🆕 Banco vazio detectado. Aplicando todas as migrations...");
+                        Log.Information("🆕 Criando estrutura do banco de dados...");
                         try
                         {
                             db.Database.Migrate();
-                            Log.Information("✅ Banco inicializado e migrations aplicadas!");
+                            Log.Information("✅ Banco de dados criado com sucesso");
                         }
                         catch (Exception migrateEx)
                         {
-                            Log.Warning(migrateEx, "⚠️ Erro ao aplicar migrations no banco vazio: {Message}", migrateEx.Message);
+                            Log.Error(migrateEx, "❌ Erro ao criar banco de dados: {Message}", migrateEx.Message);
+                            throw;
                         }
                     }
                 }
                 else
                 {
-                    Log.Warning("⚠️ Não foi possível conectar ao banco. Verificando se é desenvolvimento...");
-                    if (!builder.Environment.IsProduction())
-                    {
-                        Log.Information("🏠 Ambiente de desenvolvimento - continuando sem banco");
-                    }
-                    else
-                    {
-                        Log.Error("❌ ERRO: Não foi possível conectar ao banco em produção!");
-                        throw new InvalidOperationException("Falha na conexão com o banco de dados PostgreSQL");
-                    }
+                    // Development - apenas aplica migrations sem logs verbosos
+                    db.Database.Migrate();
+                    Log.Information("✅ Banco de dados atualizado");
                 }
             }
-            catch (Exception ex) when (!builder.Environment.IsProduction())
+            catch (Exception ex) when (!ex.Message.Contains("Não foi possível conectar"))
             {
-                Log.Warning(ex, "⚠️ Erro ao configurar banco em desenvolvimento. Continuando...");
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "❌ Erro crítico ao configurar banco em produção");
+                Log.Error(ex, "❌ Erro ao inicializar banco de dados: {Message}", ex.Message);
                 throw;
             }
         }
@@ -416,7 +384,7 @@ try
 
     app.MapControllers();
 
-    Log.Information("✅ CleverBudget API iniciada com sucesso!");
+    Log.Information("✅ CleverBudget API pronta!");
 
     app.Run();
 }

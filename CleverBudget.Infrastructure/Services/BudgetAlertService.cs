@@ -28,7 +28,7 @@ public class BudgetAlertService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("🔔 BudgetAlertService iniciado - Verificação a cada {Interval}", _checkInterval);
+        _logger.LogInformation("🔔 Serviço de alertas de orçamento iniciado");
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -60,9 +60,6 @@ public class BudgetAlertService : BackgroundService
             .Include(b => b.User)
             .Where(b => b.Month == currentMonth && b.Year == currentYear)
             .ToListAsync();
-
-        _logger.LogInformation("🔍 Verificando {Count} orçamentos para {Month}/{Year}", 
-            budgets.Count, currentMonth, currentYear);
 
         foreach (var budget in budgets)
         {
