@@ -1,6 +1,7 @@
 using CleverBudget.Core.Entities;
-using CleverBudget.Infrastructure.Data;
 using CleverBudget.Core.Interfaces;
+using CleverBudget.Core.Options;
+using CleverBudget.Infrastructure.Data;
 using CleverBudget.Infrastructure.Services;
 using CleverBudget.Application.Validators;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -18,8 +19,13 @@ using Microsoft.AspNetCore.DataProtection;
 using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using CleverBudget.Api.HealthChecks;
 using QuestPDF.Infrastructure;
 using AspNetCoreRateLimit;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using System.Text.Json;
+using System.Linq;
 
 QuestPDF.Settings.License = LicenseType.Community;
 
@@ -261,13 +267,22 @@ try
     builder.Services.AddScoped<ITransactionService, TransactionService>();
     builder.Services.AddScoped<ICategoryService, CategoryService>();
     builder.Services.AddScoped<IGoalService, GoalService>();
+    builder.Services.Configure<BackupOptions>(builder.Configuration.GetSection(BackupOptions.SectionName));
+
     builder.Services.AddScoped<IReportService, ReportService>();
     builder.Services.AddScoped<IExportService, ExportService>();
     builder.Services.AddScoped<IEmailService, EmailService>();
     builder.Services.AddScoped<IRecurringTransactionService, RecurringTransactionService>();
     builder.Services.AddScoped<IBudgetService, BudgetService>();
+    builder.Services.AddScoped<IBackupService, BackupService>();
     builder.Services.AddHostedService<RecurringTransactionGeneratorService>();
     builder.Services.AddHostedService<BudgetAlertService>();
+    builder.Services.AddHostedService<BackupSchedulerService>();
+
+    builder.Services.AddHealthChecks()
+        .AddCheck("self", () => HealthCheckResult.Healthy(), tags: new[] { "live" })
+        .AddDbContextCheck<AppDbContext>("database", tags: new[] { "ready" })
+        .AddCheck<BackupStorageHealthCheck>("backup_storage", tags: new[] { "ready" });
 
     var keysPath = Environment.GetEnvironmentVariable("DATAPROTECTION_KEYS_PATH") 
         ?? Path.Combine(Directory.GetCurrentDirectory(), "DataProtection-Keys");
@@ -405,6 +420,18 @@ try
 
     app.MapControllers();
 
+    app.MapHealthChecks("/health/live", new HealthCheckOptions
+    {
+        Predicate = registration => registration.Tags.Contains("live"),
+        ResponseWriter = WriteHealthResponse
+    });
+
+    app.MapHealthChecks("/health/ready", new HealthCheckOptions
+    {
+        Predicate = registration => registration.Tags.Contains("ready"),
+        ResponseWriter = WriteHealthResponse
+    });
+
     Log.Information("✅ CleverBudget API pronta!");
 
     app.Run();
@@ -416,6 +443,28 @@ catch (Exception ex)
 finally
 {
     Log.CloseAndFlush();
+}
+
+static Task WriteHealthResponse(HttpContext context, HealthReport report)
+{
+    context.Response.ContentType = "application/json; charset=utf-8";
+
+    var response = new
+    {
+        status = report.Status.ToString(),
+        totalDurationMilliseconds = report.TotalDuration.TotalMilliseconds,
+        checks = report.Entries.Select(entry => new
+        {
+            name = entry.Key,
+            status = entry.Value.Status.ToString(),
+            description = entry.Value.Description,
+            durationMilliseconds = entry.Value.Duration.TotalMilliseconds,
+            data = entry.Value.Data?.ToDictionary(pair => pair.Key, pair => pair.Value?.ToString())
+        })
+    };
+
+    var json = JsonSerializer.Serialize(response);
+    return context.Response.WriteAsync(json);
 }
 
 // Torna a classe Program acessível para testes

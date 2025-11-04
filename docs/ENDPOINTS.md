@@ -293,6 +293,17 @@
 
 ---
 
+## Backups (`/api/backups`)
+
+- `GET /` — Lista backups disponíveis no diretório configurado. Retorna `fileName`, `sizeBytes` e `createdAt`.
+- `POST /?download=false` — Gera novo backup. Se `download=true`, faz o download imediato do arquivo compactado (`application/gzip`). Caso contrário, grava no disco e responde com `fileName` e `storedOnDisk` (sem expor o caminho físico).
+- `GET /{fileName}` — Download de um backup específico previamente gerado.
+- `POST /restore` — Recebe `multipart/form-data` com o arquivo `.json.gz` e restaura todo o snapshot do banco, incluindo contas de usuário e papéis.
+
+> Todos os endpoints requerem autenticação JWT. Use contas com privilégios administrativos, já que a restauração faz um replace completo dos dados.
+
+---
+
 ## Requisições autenticadas
 
 Inclua sempre:

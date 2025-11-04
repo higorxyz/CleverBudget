@@ -13,14 +13,12 @@
 O **CleverBudget** é uma API REST completa para gerenciamento de finanças pessoais, construída com uma arquitetura em camadas inspirada em **Clean Architecture** e boas práticas de desenvolvimento.
 
 ### ✨ Principais Funcionalidades
-
-- 🔐 **Autenticação JWT** com ASP.NET Identity
-- 💸 **Gestão de Transações** (receitas e despesas)
-- 🗂️ **Categorias Personalizáveis** (9 categorias padrão + customizadas)
-- 🎯 **Sistema de Metas** com acompanhamento de progresso
-- 📊 **Relatórios Financeiros** detalhados
-- 🔍 **Filtros Avançados** por data, tipo e categoria
-- 📈 **Histórico Mensal** com análise de tendências
+- 🔐 Autenticação e autorização com ASP.NET Identity + JWT
+- 💸 CRUD completo de transações, categorias, metas e orçamentos
+- 📊 Relatórios PDF/CSV, dashboards e exportações filtradas
+- 🔁 Serviços em background para alertas e transações recorrentes
+- ☁️ Upload seguro de imagens (Cloudinary + moderação)
+- 📦 Backups automáticos com retenção configurável e API de restauração
 
 ---
 
@@ -56,12 +54,24 @@ dotnet run --project CleverBudget.Api
 - `GET /api/reports` - Gerar relatórios
 - `GET /api/export/pdf` - Exportar PDF
 - `GET /api/export/csv` - Exportar CSV
+- `GET /api/backups` - Listar backups disponíveis
+- `POST /api/backups?download=true|false` - Criar backup (download imediato opcional)
+- `GET /api/backups/{fileName}` - Download de backup existente
+- `POST /api/backups/restore` - Restaurar banco a partir de um backup
 
 ### **4. Deploy no Railway**
 ```bash
 # O deploy é automático via GitHub
 # Configure as variáveis de ambiente no painel Railway
 ```
+
+### **5. Backups automáticos**
+- Configure `BackupSettings` no `appsettings.{Ambiente}.json` ou via variáveis de ambiente (veja `docs/ENVIRONMENT_VARIABLES.md`).
+- O `BackupSchedulerService` cria snapshots `.json.gz` no diretório configurado e respeita `RetentionDays`.
+- Os snapshots incluem dados de identidade (usuários, papéis, claims); mantenha os arquivos protegidos e restaure apenas em ambientes confiáveis.
+- Todos os endpoints de backup exigem autenticação; recomenda-se restringir a usuários administradores.
+- A resposta de `POST /api/backups` retorna apenas `fileName` e `storedOnDisk`, evitando expor caminhos físicos.
+- Para executar manualmente um backup local, chame `POST /api/backups?download=true` e salve o arquivo retornado.
 
 ---
 
@@ -219,7 +229,6 @@ A API utiliza **JWT Bearer Token**. Para acessar endpoints protegidos:
 - ✅ Relatórios Financeiros
 
 🔵 **Fase 2 — Recursos Avançados (100% Concluído)** ✅
-🔵 **Fase 2 — Recursos Avançados (100% Concluído)** ✅
 - ✅ Exportação PDF/CSV
 - ✅ Notificações por Email (Brevo)
 - ✅ Transações Recorrentes (Automáticas)
@@ -232,7 +241,7 @@ A API utiliza **JWT Bearer Token**. Para acessar endpoints protegidos:
 - ✅ Rate Limiting (AspNetCoreRateLimit)
 - ✅ Deploy no Railway
 
-🟡 **Fase 3 — Inteligência e SaaS (Planejado)**
+🟡 **Fase 3 — Inteligência e SaaS (Em andamento)**
 - ⬜ Insights financeiros automáticos
 - ⬜ Previsão de gastos
 - ⬜ Gamificação (conquistas/níveis)
@@ -240,8 +249,7 @@ A API utiliza **JWT Bearer Token**. Para acessar endpoints protegidos:
 - ⬜ Painel Admin (usuários, logs, auditoria)
 - ⬜ Frontend React + Vercel
 - ⬜ Integração com bancos (Open Banking)
-- ⬜ Monitoramento e observabilidade
-- ⬜ Backup/Restore de dados
+- ✅ Backup/Restore de dados
 
 ---
 

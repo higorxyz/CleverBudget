@@ -102,6 +102,16 @@ Em produção, o `Program.cs` também aceita `ConnectionStrings__DefaultConnecti
 | `Brevo__FromName` | ❌ | `CleverBudget` | |
 | `BREVO__APIKEY`, `BREVO__FROMEMAIL`, `BREVO__FROMNAME` | ❌ | — | Variantes aceitas. |
 
+### Backups automáticos
+
+| Variável | Obrigatório | Default (`appsettings`) | Comentário |
+|----------|-------------|-------------------------|------------|
+| `BackupSettings__EnableAutomaticBackups` | ❌ | `false` em dev / `true` em produção | Liga ou desliga o agendador hospedado. |
+| `BackupSettings__RootPath` | ❌ | `Backups` (relativo) / `/app/Backups` (produção) | Diretório onde os arquivos `.json.gz` serão salvos. Pode ser absoluto. |
+| `BackupSettings__RetentionDays` | ❌ | `7` dev / `14` prod | Remove arquivos mais antigos que `n` dias toda vez que um backup novo é salvo. |
+| `BackupSettings__Interval` | ❌ | `1.00:00:00` | Intervalo entre execuções automáticas (`d.hh:mm:ss`). |
+| `BackupSettings__RunOnStartup` | ❌ | `true` | Executa backup assim que o serviço inicia, útil para garantir snapshot inicial. |
+
 ### ASP.NET Core e infraestrutura
 
 | Variável | Obrigatório | Default | Comentário |
