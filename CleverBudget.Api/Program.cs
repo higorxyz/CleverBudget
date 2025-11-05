@@ -1,31 +1,34 @@
+using Asp.Versioning;
+using Asp.Versioning.ApiExplorer;
+using AspNetCoreRateLimit;
+using CleverBudget.Api.HealthChecks;
+using CleverBudget.Api.Swagger;
+using CleverBudget.Application.Validators;
 using CleverBudget.Core.Entities;
 using CleverBudget.Core.Interfaces;
 using CleverBudget.Core.Options;
 using CleverBudget.Infrastructure.Data;
 using CleverBudget.Infrastructure.Services;
-using CleverBudget.Application.Validators;
+using DotNetEnv;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using FluentValidation;
-using FluentValidation.AspNetCore;
+using QuestPDF.Infrastructure;
 using Serilog;
-using System.Text;
-using DotNetEnv;
-using Microsoft.AspNetCore.DataProtection;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using CleverBudget.Api.HealthChecks;
-using QuestPDF.Infrastructure;
-using AspNetCoreRateLimit;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
+using System.Text;
 using System.Text.Json;
-using System.Linq;
 
 QuestPDF.Settings.License = LicenseType.Community;
 
@@ -212,44 +215,23 @@ try
 
     builder.Services.AddEndpointsApiExplorer();
 
-    builder.Services.AddSwaggerGen(options =>
+    builder.Services.AddApiVersioning(options =>
     {
-        options.SwaggerDoc("v1", new OpenApiInfo
-        {
-            Title = "CleverBudget API",
-            Version = "v1",
-            Description = "API para controle financeiro inteligente",
-            Contact = new OpenApiContact
-            {
-                Name = "CleverBudget API"
-            }
-        });
-
-        options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-        {
-            Name = "Authorization",
-            Type = SecuritySchemeType.Http,
-            Scheme = "Bearer",
-            BearerFormat = "JWT",
-            In = ParameterLocation.Header,
-            Description = "Insira o token JWT no formato: Bearer {seu token}"
-        });
-
-        options.AddSecurityRequirement(new OpenApiSecurityRequirement
-        {
-            {
-                new OpenApiSecurityScheme
-                {
-                    Reference = new OpenApiReference
-                    {
-                        Type = ReferenceType.SecurityScheme,
-                        Id = "Bearer"
-                    }
-                },
-                new string[] {}
-            }
-        });
+        options.DefaultApiVersion = new ApiVersion(2, 0);
+        options.AssumeDefaultVersionWhenUnspecified = true;
+        options.ReportApiVersions = true;
+        options.ApiVersionReader = ApiVersionReader.Combine(
+            new UrlSegmentApiVersionReader(),
+            new HeaderApiVersionReader("x-api-version"),
+            new QueryStringApiVersionReader("api-version"));
+    }).AddApiExplorer(options =>
+    {
+        options.GroupNameFormat = "'v'VVV";
+        options.SubstituteApiVersionInUrl = true;
     });
+
+    builder.Services.AddSwaggerGen();
+    builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
 
     builder.Services.AddCors(options =>
     {
@@ -395,10 +377,17 @@ try
     }
 
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
+
+    var apiVersionProvider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+
+    app.UseSwaggerUI(options =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "CleverBudget API v1");
-        c.RoutePrefix = string.Empty;
+        foreach (var description in apiVersionProvider.ApiVersionDescriptions)
+        {
+            options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", $"CleverBudget API {description.GroupName.ToUpperInvariant()}");
+        }
+
+        options.RoutePrefix = string.Empty;
     });
 
     if (!app.Environment.IsProduction())

@@ -1,11 +1,13 @@
+using Asp.Versioning;
 using CleverBudget.Core.DTOs;
 using CleverBudget.Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CleverBudget.Api.Controllers;
 
+[ApiVersion("2.0")]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;

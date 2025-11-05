@@ -4,14 +4,16 @@ O CleverBudget usa **ASP.NET Core Identity** para gerenciamento de usuários, co
 
 ## Fluxo resumido
 
-1. Usuário faz `POST /api/auth/register` ou `POST /api/auth/login`.
+1. Usuário faz `POST /api/v2/auth/register` ou `POST /api/v2/auth/login`.
 2. `AuthService` valida credenciais com o `UserManager<User>` do Identity.
 3. Um `AuthResponseDto` é retornado com o token JWT, dados básicos do usuário e a data de expiração (`ExpiresAt`).
 4. O front-end envia o token no header `Authorization: Bearer <token>` para acessar rotas protegidas.
 
-## Endpoints principais
+> **Nota:** A versão v1 (`/api/auth/*`) permanece disponível para compatibilidade com integrações existentes.
 
-### Registrar usuário — `POST /api/auth/register`
+## Endpoints principais (v2)
+
+### Registrar usuário — `POST /api/v2/auth/register`
 
 Request:
 ```json
@@ -40,7 +42,7 @@ Erros mapeados pelo `AuthService`:
 - `EMAIL_ALREADY_EXISTS` – e-mail já cadastrado.
 - Códigos do Identity (`PasswordTooShort`, `PasswordRequiresUpper`, etc.) são convertidos para mensagens em português antes de retornar `400`.
 
-### Login — `POST /api/auth/login`
+### Login — `POST /api/v2/auth/login`
 
 Request:
 ```json
@@ -55,7 +57,7 @@ Response 200: mesmo formato do registro (`AuthResponseDto`).
 Erros:
 - `401 Unauthorized` com `INVALID_CREDENTIALS` para e-mail inexistente ou senha incorreta. A mensagem é intencionalmente genérica para evitar enumeração de usuários.
 
-### Alterar senha — `PUT /api/profile/password`
+### Alterar senha — `PUT /api/v2/profile/password`
 
 Header obrigatório: `Authorization: Bearer <token>`
 
@@ -118,18 +120,18 @@ Configuradas em `Program.cs`:
 
 - Durante o registro, categorias padrão são criadas automaticamente em background.
 - Um e-mail de boas-vindas é enviado via Brevo quando a API key está configurada.
-- O `UserProfileService` expõe `GET /api/profile` e `PUT /api/profile` para atualizar nome e foto.
+- O `UserProfileService` expõe `GET /api/v2/profile` e `PUT /api/v2/profile` para atualizar nome e foto.
 
 ## Uso nos clientes
 
 ```bash
 # obter token
-curl -X POST https://localhost:5001/api/auth/login \
+curl -X POST https://localhost:5001/api/v2/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"maria.silva@example.com","password":"SenhaForte123"}'
 
 # usar token
-curl https://localhost:5001/api/transactions \
+curl https://localhost:5001/api/v2/transactions \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
 ```
 

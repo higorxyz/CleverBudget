@@ -1,12 +1,16 @@
+using Asp.Versioning;
+using CleverBudget.Api.Extensions;
 using CleverBudget.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace CleverBudget.Api.Controllers;
 
+[ApiVersion("2.0")]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Authorize]
 public class ReportsController : ControllerBase
 {
@@ -32,6 +36,14 @@ public class ReportsController : ControllerBase
     {
         var userId = GetUserId();
         var summary = await _reportService.GetSummaryAsync(userId, startDate, endDate);
+        var etag = EtagGenerator.Create(summary);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(summary);
     }
 
@@ -46,6 +58,14 @@ public class ReportsController : ControllerBase
     {
         var userId = GetUserId();
         var report = await _reportService.GetCategoryReportAsync(userId, startDate, endDate, expensesOnly);
+        var etag = EtagGenerator.Create(report);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(report);
     }
 
@@ -57,6 +77,14 @@ public class ReportsController : ControllerBase
     {
         var userId = GetUserId();
         var report = await _reportService.GetMonthlyReportAsync(userId, months);
+        var etag = EtagGenerator.Create(report);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(report);
     }
 
@@ -70,6 +98,14 @@ public class ReportsController : ControllerBase
     {
         var userId = GetUserId();
         var report = await _reportService.GetDetailedReportAsync(userId, startDate, endDate);
+        var etag = EtagGenerator.Create(report);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(report);
     }
 }

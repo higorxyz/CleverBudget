@@ -11,5 +11,4 @@ public interface IRecurringTransactionService
     Task<RecurringTransactionResponseDto?> CreateAsync(CreateRecurringTransactionDto dto, string userId);
     Task<RecurringTransactionResponseDto?> UpdateAsync(int id, UpdateRecurringTransactionDto dto, string userId);
     Task<bool> DeleteAsync(int id, string userId);
-    Task<bool> ToggleActiveAsync(int id, string userId);
 }

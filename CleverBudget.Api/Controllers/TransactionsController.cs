@@ -1,15 +1,19 @@
+using Asp.Versioning;
+using CleverBudget.Api.Extensions;
 using CleverBudget.Core.Common;
 using CleverBudget.Core.DTOs;
 using CleverBudget.Core.Enums;
 using CleverBudget.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace CleverBudget.Api.Controllers;
 
+[ApiVersion("2.0")]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Authorize]
 public class TransactionsController : ControllerBase
 {
@@ -68,6 +72,13 @@ public class TransactionsController : ControllerBase
             endDate
         );
 
+        var etag = EtagGenerator.Create(result);
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(result);
     }
 
@@ -83,6 +94,13 @@ public class TransactionsController : ControllerBase
         if (transaction == null)
             return NotFound(new { message = "Transação não encontrada." });
 
+        var etag = EtagGenerator.Create(transaction);
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(transaction);
     }
 

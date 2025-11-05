@@ -58,8 +58,9 @@ public class RecurringTransactionsControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedResult = Assert.IsType<PagedResult<RecurringTransactionResponseDto>>(okResult.Value);
-        Assert.Single(returnedResult.Items);
+    var returnedResult = Assert.IsType<PagedResult<RecurringTransactionResponseDto>>(okResult.Value);
+    Assert.True(_controller.Response.Headers.ContainsKey("ETag"));
+    Assert.Single(returnedResult.Items);
     }
 
     [Fact]
@@ -86,8 +87,9 @@ public class RecurringTransactionsControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedResult = Assert.IsType<PagedResult<RecurringTransactionResponseDto>>(okResult.Value);
-        Assert.True(returnedResult.Items.First().IsActive);
+    var returnedResult = Assert.IsType<PagedResult<RecurringTransactionResponseDto>>(okResult.Value);
+    Assert.True(_controller.Response.Headers.ContainsKey("ETag"));
+    Assert.True(returnedResult.Items.First().IsActive);
     }
 
     [Fact]
@@ -109,8 +111,9 @@ public class RecurringTransactionsControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedTransactions = Assert.IsAssignableFrom<IEnumerable<RecurringTransactionResponseDto>>(okResult.Value);
-        Assert.Equal(2, returnedTransactions.Count());
+    var returnedTransactions = Assert.IsAssignableFrom<IEnumerable<RecurringTransactionResponseDto>>(okResult.Value);
+    Assert.True(_controller.Response.Headers.ContainsKey("ETag"));
+    Assert.Equal(2, returnedTransactions.Count());
     }
 
     [Fact]
@@ -128,8 +131,9 @@ public class RecurringTransactionsControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedTransaction = Assert.IsType<RecurringTransactionResponseDto>(okResult.Value);
-        Assert.Equal(1, returnedTransaction.Id);
+    var returnedTransaction = Assert.IsType<RecurringTransactionResponseDto>(okResult.Value);
+    Assert.True(_controller.Response.Headers.ContainsKey("ETag"));
+    Assert.Equal(1, returnedTransaction.Id);
     }
 
     [Fact]
@@ -222,8 +226,9 @@ public class RecurringTransactionsControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedTransaction = Assert.IsType<RecurringTransactionResponseDto>(okResult.Value);
-        Assert.Equal(200, returnedTransaction.Amount);
+    var returnedTransaction = Assert.IsType<RecurringTransactionResponseDto>(okResult.Value);
+    Assert.True(_controller.Response.Headers.ContainsKey("ETag"));
+    Assert.Equal(200, returnedTransaction.Amount);
     }
 
     [Fact]
@@ -268,37 +273,6 @@ public class RecurringTransactionsControllerTests
 
         // Act
         var result = await _controller.Delete(999);
-
-        // Assert
-        Assert.IsType<NotFoundObjectResult>(result);
-    }
-
-    [Fact]
-    public async Task ToggleActive_ExistingTransaction_ReturnsOk()
-    {
-        // Arrange
-        _serviceMock
-            .Setup(s => s.ToggleActiveAsync(1, UserId))
-            .ReturnsAsync(true);
-
-        // Act
-        var result = await _controller.ToggleActive(1);
-
-        // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.NotNull(okResult.Value);
-    }
-
-    [Fact]
-    public async Task ToggleActive_NonExistingTransaction_ReturnsNotFound()
-    {
-        // Arrange
-        _serviceMock
-            .Setup(s => s.ToggleActiveAsync(999, UserId))
-            .ReturnsAsync(false);
-
-        // Act
-        var result = await _controller.ToggleActive(999);
 
         // Assert
         Assert.IsType<NotFoundObjectResult>(result);

@@ -47,17 +47,17 @@ dotnet run --project CleverBudget.Api
 ```
 
 ### **3. Endpoints Principais**
-- `POST /api/auth/register` - Registrar usuário
-- `POST /api/auth/login` - Fazer login
-- `GET /api/transactions` - Listar transações
-- `POST /api/transactions` - Criar transação
-- `GET /api/reports` - Gerar relatórios
-- `GET /api/export/pdf` - Exportar PDF
-- `GET /api/export/csv` - Exportar CSV
-- `GET /api/backups` - Listar backups disponíveis
-- `POST /api/backups?download=true|false` - Criar backup (download imediato opcional)
-- `GET /api/backups/{fileName}` - Download de backup existente
-- `POST /api/backups/restore` - Restaurar banco a partir de um backup
+- `POST /api/v2/auth/register` - Registrar usuário
+- `POST /api/v2/auth/login` - Fazer login
+- `GET /api/v2/transactions` - Listar transações
+- `POST /api/v2/transactions` - Criar transação
+- `GET /api/v2/reports/summary` - Gerar relatórios
+- `GET /api/v2/export/transactions/pdf` - Exportar PDF
+- `GET /api/v2/export/transactions/csv` - Exportar CSV
+- `GET /api/v2/backups` - Listar backups disponíveis
+- `POST /api/v2/backups?download=true|false` - Criar backup (download imediato opcional)
+- `GET /api/v2/backups/{fileName}` - Download de backup existente
+- `POST /api/v2/backups/restore` - Restaurar banco a partir de um backup
 
 ### **4. Deploy no Railway**
 ```bash
@@ -70,8 +70,8 @@ dotnet run --project CleverBudget.Api
 - O `BackupSchedulerService` cria snapshots `.json.gz` no diretório configurado e respeita `RetentionDays`.
 - Os snapshots incluem dados de identidade (usuários, papéis, claims); mantenha os arquivos protegidos e restaure apenas em ambientes confiáveis.
 - Todos os endpoints de backup exigem autenticação; recomenda-se restringir a usuários administradores.
-- A resposta de `POST /api/backups` retorna apenas `fileName` e `storedOnDisk`, evitando expor caminhos físicos.
-- Para executar manualmente um backup local, chame `POST /api/backups?download=true` e salve o arquivo retornado.
+- A resposta de `POST /api/v2/backups` retorna apenas `fileName` e `storedOnDisk`, evitando expor caminhos físicos.
+- Para executar manualmente um backup local, chame `POST /api/v2/backups?download=true` e salve o arquivo retornado.
 
 ---
 
@@ -154,57 +154,56 @@ A documentação técnica completa está disponível na pasta [`/docs`](./docs/)
 ## 📚 Endpoints Principais
 
 ### Autenticação
-- `POST /api/auth/register` - Registrar novo usuário
-- `POST /api/auth/login` - Login e geração de token JWT
+- `POST /api/v2/auth/register` - Registrar novo usuário
+- `POST /api/v2/auth/login` - Login e geração de token JWT
 
-### Transações
-- `GET /api/transactions` - Listar transações (com filtros)
-- `POST /api/transactions` - Criar transação
-- `PUT /api/transactions/{id}` - Atualizar transação
-- `DELETE /api/transactions/{id}` - Deletar transação
+### Transações (v2)
+- `GET /api/v2/transactions` - Listar transações (com filtros)
+- `POST /api/v2/transactions` - Criar transação
+- `PUT /api/v2/transactions/{id}` - Atualizar transação
+- `DELETE /api/v2/transactions/{id}` - Deletar transação
 
-### Categorias
-- `GET /api/categories` - Listar categorias
-- `POST /api/categories` - Criar categoria customizada
-- `PUT /api/categories/{id}` - Atualizar categoria
-- `DELETE /api/categories/{id}` - Deletar categoria
+### Categorias (v2)
+- `GET /api/v2/categories` - Listar categorias
+- `POST /api/v2/categories` - Criar categoria customizada
+- `PUT /api/v2/categories/{id}` - Atualizar categoria
+- `DELETE /api/v2/categories/{id}` - Deletar categoria
 
-### Transações Recorrentes
-- `GET /api/recurringtransactions` - Listar transações recorrentes
-- `POST /api/recurringtransactions` - Criar transação recorrente
-- `PUT /api/recurringtransactions/{id}` - Atualizar transação recorrente
-- `DELETE /api/recurringtransactions/{id}` - Deletar transação recorrente
-- `POST /api/recurringtransactions/{id}/toggle` - Ativar/Desativar
-- `POST /api/recurringtransactions/generate` - Gerar transações manualmente
+### Transações Recorrentes (v2)
+- `GET /api/v2/recurringtransactions` - Listar transações recorrentes
+- `GET /api/v2/recurringtransactions/all` - Listar todas sem paginação
+- `POST /api/v2/recurringtransactions` - Criar transação recorrente
+- `PUT /api/v2/recurringtransactions/{id}` - Atualizar transação recorrente ou alterar `isActive`
+- `DELETE /api/v2/recurringtransactions/{id}` - Deletar transação recorrente
 
-### Orçamentos
-- `GET /api/budgets` - Listar orçamentos
-- `GET /api/budgets/paged` - Listar orçamentos paginados
-- `GET /api/budgets/{id}` - Buscar orçamento por ID
-- `GET /api/budgets/category/{categoryId}/period` - Buscar por categoria e período
-- `GET /api/budgets/current` - Orçamentos do mês atual
-- `GET /api/budgets/summary` - Resumo de orçamentos
-- `POST /api/budgets` - Criar orçamento
-- `PUT /api/budgets/{id}` - Atualizar orçamento
-- `DELETE /api/budgets/{id}` - Deletar orçamento
+### Orçamentos (v2)
+- `GET /api/v2/budgets` - Listar orçamentos (`scope=current`, `view=summary` via query string)
+- `GET /api/v2/budgets/paged` - Listar orçamentos paginados
+- `GET /api/v2/budgets/{id}` - Buscar orçamento por ID
+- `GET /api/v2/budgets/category/{categoryId}/period?month=&year=` - Buscar por categoria e período
+- `POST /api/v2/budgets` - Criar orçamento
+- `PUT /api/v2/budgets/{id}` - Atualizar orçamento
+- `DELETE /api/v2/budgets/{id}` - Deletar orçamento
 
-### Metas
-- `GET /api/goals` - Listar metas
-- `POST /api/goals` - Criar meta mensal
-- `GET /api/goals/status` - Ver progresso das metas
+### Metas (v2)
+- `GET /api/v2/goals` - Listar metas
+- `POST /api/v2/goals` - Criar meta mensal
+- `GET /api/v2/goals/status` - Ver progresso das metas
 
-### Relatórios
-- `GET /api/reports/summary` - Resumo geral
-- `GET /api/reports/categories` - Gastos por categoria
-- `GET /api/reports/monthly` - Histórico mensal
-- `GET /api/reports/detailed` - Relatório completo
+### Relatórios (v2)
+- `GET /api/v2/reports/summary` - Resumo geral
+- `GET /api/v2/reports/categories` - Gastos por categoria
+- `GET /api/v2/reports/monthly` - Histórico mensal
+- `GET /api/v2/reports/detailed` - Relatório completo
 
-### Perfil
-- `GET /api/profile` - Ver perfil do usuário autenticado
-- `PUT /api/profile` - Atualizar nome e sobrenome
-- `PUT /api/profile/password` - Alterar senha
-- `PUT /api/profile/photo` - Atualizar foto de perfil (URL) - DEPRECADO
-- `POST /api/profile/photo` - Upload de foto de perfil (arquivo)
+### Perfil (v2)
+- `GET /api/v2/profile` - Ver perfil do usuário autenticado
+- `PUT /api/v2/profile` - Atualizar nome e sobrenome
+- `PUT /api/v2/profile/password` - Alterar senha
+- `PUT /api/v2/profile/photo` - Atualizar foto de perfil (URL) - DEPRECADO
+- `POST /api/v2/profile/photo` - Upload de foto de perfil (arquivo)
+
+> ℹ️ **Precisa da versão estável (v1)?** Acesse a seção [API Legada (v1)](#api-legada-v1) ou consulte `docs/ENDPOINTS.md` para o guia completo de compatibilidade.
 
 ---
 
@@ -212,7 +211,7 @@ A documentação técnica completa está disponível na pasta [`/docs`](./docs/)
 
 A API utiliza **JWT Bearer Token**. Para acessar endpoints protegidos:
 
-1. Faça login em `/api/auth/login`
+1. Faça login em `/api/v2/auth/login`
 2. Copie o token retornado
 3. No Swagger, clique em **"Authorize"** 🔒
 4. Insira: `Bearer {seu_token}`
@@ -349,6 +348,22 @@ Desenvolvido como projeto de portfólio para demonstrar conhecimentos em:
 - Entity Framework Core
 - Autenticação JWT
 - Boas práticas de desenvolvimento
+
+---
+
+---
+
+## 🧭 API Legada (v1)
+
+A versão v2 é a padrão e recebe novas funcionalidades primeiro. A versão **v1 permanece disponível como trilha estável**, exposta nos mesmos caminhos anteriores (`/api/...`). Utilize-a se precisar de compatibilidade com integrações já existentes enquanto migra para v2.
+
+- Base URL: `/api`
+- Principais diferenças:
+	- Endpoints como `/budgets/summary` e `/budgets/current` continuam acessíveis diretamente.
+	- Transações recorrentes ainda usam `POST /recurringtransactions/{id}/toggle` para alternar o status.
+	- Não há suporte a ETags.
+
+O detalhamento completo da v1 (rotas, payloads e códigos de resposta) está documentado em `docs/ENDPOINTS.md` na seção **Legacy v1**.
 
 ---
 

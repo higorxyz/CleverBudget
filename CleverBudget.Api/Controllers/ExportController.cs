@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using CleverBudget.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -5,8 +6,9 @@ using System.Security.Claims;
 
 namespace CleverBudget.Api.Controllers;
 
+[ApiVersion("2.0")]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Authorize]
 public class ExportController : ControllerBase
 {

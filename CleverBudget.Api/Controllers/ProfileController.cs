@@ -1,13 +1,17 @@
+using Asp.Versioning;
+using CleverBudget.Api.Extensions;
 using CleverBudget.Core.DTOs;
 using CleverBudget.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace CleverBudget.Api.Controllers;
 
+[ApiVersion("2.0")]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Authorize]
 public class ProfileController : ControllerBase
 {
@@ -36,6 +40,14 @@ public class ProfileController : ControllerBase
         if (profile == null)
             return NotFound(new { message = "Perfil não encontrado" });
 
+        var etag = EtagGenerator.Create(profile);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(profile);
     }
 

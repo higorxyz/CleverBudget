@@ -1,14 +1,18 @@
+using Asp.Versioning;
+using CleverBudget.Api.Extensions;
 using CleverBudget.Core.Common;
 using CleverBudget.Core.DTOs;
 using CleverBudget.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace CleverBudget.Api.Controllers;
 
+[ApiVersion("2.0")]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Authorize]
 public class RecurringTransactionsController : ControllerBase
 {
@@ -53,6 +57,14 @@ public class RecurringTransactionsController : ControllerBase
         };
 
         var result = await _recurringTransactionService.GetPagedAsync(userId, paginationParams, isActive);
+        var etag = EtagGenerator.Create(result);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(result);
     }
 
@@ -64,6 +76,14 @@ public class RecurringTransactionsController : ControllerBase
     {
         var userId = GetUserId();
         var recurringTransactions = await _recurringTransactionService.GetAllAsync(userId, isActive);
+        var etag = EtagGenerator.Create(recurringTransactions);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(recurringTransactions);
     }
 
@@ -79,6 +99,14 @@ public class RecurringTransactionsController : ControllerBase
         if (recurringTransaction == null)
             return NotFound(new { message = "Transação recorrente não encontrada." });
 
+        var etag = EtagGenerator.Create(recurringTransaction);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(recurringTransaction);
     }
 
@@ -109,6 +137,14 @@ public class RecurringTransactionsController : ControllerBase
         if (recurringTransaction == null)
             return NotFound(new { message = "Transação recorrente não encontrada." });
 
+        var etag = EtagGenerator.Create(recurringTransaction);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(recurringTransaction);
     }
 
@@ -125,20 +161,5 @@ public class RecurringTransactionsController : ControllerBase
             return NotFound(new { message = "Transação recorrente não encontrada." });
 
         return NoContent();
-    }
-
-    /// <summary>
-    /// Ativar/Desativar transação recorrente
-    /// </summary>
-    [HttpPatch("{id}/toggle-active")]
-    public async Task<IActionResult> ToggleActive(int id)
-    {
-        var userId = GetUserId();
-        var success = await _recurringTransactionService.ToggleActiveAsync(id, userId);
-
-        if (!success)
-            return NotFound(new { message = "Transação recorrente não encontrada." });
-
-        return Ok(new { message = "Status alterado com sucesso." });
     }
 }

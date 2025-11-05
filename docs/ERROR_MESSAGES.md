@@ -4,11 +4,13 @@
 
 Este documento lista todas as possíveis mensagens de erro retornadas pela API, com seus códigos de erro (`errorCode`) e quando ocorrem. Use este guia para implementar tratamento de erros no frontend.
 
+> **Nota sobre versionamento:** Os exemplos abaixo usam rotas v2 (`/api/v2/*`). A versão v1 (`/api/*`) retorna os mesmos códigos e mensagens de erro.
+
 ---
 
-## 🔐 Autenticação (`/api/auth`)
+## 🔐 Autenticação (`/api/v2/auth`)
 
-### **POST /api/auth/register** - Cadastro de Usuário
+### **POST /api/v2/auth/register** - Cadastro de Usuário
 
 #### ✅ **Sucesso (200)**
 ```json
@@ -44,7 +46,7 @@ Este documento lista todas as possíveis mensagens de erro retornadas pela API, 
 
 ---
 
-### **POST /api/auth/login** - Login
+### **POST /api/v2/auth/login** - Login
 
 #### ✅ **Sucesso (200)**
 ```json
@@ -75,9 +77,9 @@ Este documento lista todas as possíveis mensagens de erro retornadas pela API, 
 
 ---
 
-## 👤 Perfil do Usuário (`/api/profile`)
+## 👤 Perfil do Usuário (`/api/v2/profile`)
 
-### **PUT /api/profile/password** - Alterar Senha
+### **PUT /api/v2/profile/password** - Alterar Senha
 
 #### ✅ **Sucesso (200)**
 ```json
@@ -108,7 +110,7 @@ Este documento lista todas as possíveis mensagens de erro retornadas pela API, 
 
 ---
 
-### **POST /api/profile/photo** - Upload de Foto
+### **POST /api/v2/profile/photo** - Upload de Foto
 
 #### ✅ **Sucesso (200)**
 ```json
@@ -139,9 +141,9 @@ Este documento lista todas as possíveis mensagens de erro retornadas pela API, 
 
 ---
 
-## 📊 Categorias (`/api/categories`)
+## 📊 Categorias (`/api/v2/categories`)
 
-### **POST /api/categories** - Criar Categoria
+### **POST /api/v2/categories** - Criar Categoria
 
 #### ❌ **Erros (400 Bad Request)**
 
@@ -151,7 +153,7 @@ Este documento lista todas as possíveis mensagens de erro retornadas pela API, 
 
 ---
 
-### **PUT /api/categories/{id}** - Atualizar Categoria
+### **PUT /api/v2/categories/{id}** - Atualizar Categoria
 
 #### ❌ **Erros (400 Bad Request)**
 
@@ -161,7 +163,7 @@ Este documento lista todas as possíveis mensagens de erro retornadas pela API, 
 
 ---
 
-### **DELETE /api/categories/{id}** - Deletar Categoria
+### **DELETE /api/v2/categories/{id}** - Deletar Categoria
 
 #### ❌ **Erros (400 Bad Request)**
 
@@ -171,9 +173,9 @@ Este documento lista todas as possíveis mensagens de erro retornadas pela API, 
 
 ---
 
-## 💸 Transações (`/api/transactions`)
+## 💸 Transações (`/api/v2/transactions`)
 
-### **POST /api/transactions** - Criar Transação
+### **POST /api/v2/transactions** - Criar Transação
 
 #### ❌ **Erros (400 Bad Request)**
 
@@ -183,7 +185,7 @@ Este documento lista todas as possíveis mensagens de erro retornadas pela API, 
 
 ---
 
-### **PUT /api/transactions/{id}** - Atualizar Transação
+### **PUT /api/v2/transactions/{id}** - Atualizar Transação
 
 #### ❌ **Erros (404 Not Found)**
 
@@ -193,7 +195,7 @@ Este documento lista todas as possíveis mensagens de erro retornadas pela API, 
 
 ---
 
-### **DELETE /api/transactions/{id}** - Deletar Transação
+### **DELETE /api/v2/transactions/{id}** - Deletar Transação
 
 #### ❌ **Erros (404 Not Found)**
 
@@ -203,9 +205,9 @@ Este documento lista todas as possíveis mensagens de erro retornadas pela API, 
 
 ---
 
-## 🎯 Metas (`/api/goals`)
+## 🎯 Metas (`/api/v2/goals`)
 
-### **POST /api/goals** - Criar Meta
+### **POST /api/v2/goals** - Criar Meta
 
 #### ❌ **Erros (400 Bad Request)**
 
@@ -215,7 +217,7 @@ Este documento lista todas as possíveis mensagens de erro retornadas pela API, 
 
 ---
 
-### **PUT /api/goals/{id}** - Atualizar Meta
+### **PUT /api/v2/goals/{id}** - Atualizar Meta
 
 #### ❌ **Erros (404 Not Found)**
 
@@ -225,7 +227,7 @@ Este documento lista todas as possíveis mensagens de erro retornadas pela API, 
 
 ---
 
-### **DELETE /api/goals/{id}** - Deletar Meta
+### **DELETE /api/v2/goals/{id}** - Deletar Meta
 
 #### ❌ **Erros (404 Not Found)**
 
@@ -235,7 +237,7 @@ Este documento lista todas as possíveis mensagens de erro retornadas pela API, 
 
 ---
 
-## 💰 Orçamentos (`/api/budgets`)
+## 💰 Orçamentos (`/api/v2/budgets`)
 
 ### **POST /api/budgets** - Criar Orçamento
 

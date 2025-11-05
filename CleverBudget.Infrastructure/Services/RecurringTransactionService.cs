@@ -120,6 +120,9 @@ public class RecurringTransactionService : IRecurringTransactionService
         if (dto.EndDate.HasValue)
             recurringTransaction.EndDate = dto.EndDate.Value.Date;
 
+        if (dto.IsActive.HasValue)
+            recurringTransaction.IsActive = dto.IsActive.Value;
+
         await _context.SaveChangesAsync();
 
         return await GetByIdAsync(recurringTransaction.Id, userId);
@@ -134,20 +137,6 @@ public class RecurringTransactionService : IRecurringTransactionService
             return false;
 
         _context.RecurringTransactions.Remove(recurringTransaction);
-        await _context.SaveChangesAsync();
-
-        return true;
-    }
-
-    public async Task<bool> ToggleActiveAsync(int id, string userId)
-    {
-        var recurringTransaction = await _context.RecurringTransactions
-            .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
-
-        if (recurringTransaction == null)
-            return false;
-
-        recurringTransaction.IsActive = !recurringTransaction.IsActive;
         await _context.SaveChangesAsync();
 
         return true;

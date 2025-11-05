@@ -1,15 +1,20 @@
+using System;
+using Asp.Versioning;
+using CleverBudget.Api.Extensions;
 using CleverBudget.Core.Common;
 using CleverBudget.Core.DTOs;
 using CleverBudget.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace CleverBudget.Api.Controllers;
 
+[ApiVersion("2.0")]
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 public class BudgetsController : ControllerBase
 {
     private readonly IBudgetService _budgetService;
@@ -28,10 +33,72 @@ public class BudgetsController : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<BudgetResponseDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAll([FromQuery] int? year, [FromQuery] int? month)
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int? year,
+        [FromQuery] int? month,
+        [FromQuery] string? scope = null,
+        [FromQuery] string? view = null)
     {
         var userId = GetUserId();
+
+        if (string.Equals(view, "summary", StringComparison.OrdinalIgnoreCase))
+        {
+            var now = DateTime.UtcNow;
+            var targetMonth = month ?? now.Month;
+            var targetYear = year ?? now.Year;
+
+            var totalBudget = await _budgetService.GetTotalBudgetForMonthAsync(userId, targetMonth, targetYear);
+            var totalSpent = await _budgetService.GetTotalSpentForMonthAsync(userId, targetMonth, targetYear);
+            var remaining = totalBudget - totalSpent;
+            var percentageUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+
+            var summary = new
+            {
+                month = targetMonth,
+                year = targetYear,
+                totalBudget,
+                totalSpent,
+                remaining,
+                percentageUsed = Math.Round(percentageUsed, 2),
+                status = percentageUsed >= 100 ? "Excedido"
+                       : percentageUsed >= 80 ? "Crítico"
+                       : percentageUsed >= 50 ? "Alerta"
+                       : "Normal"
+            };
+
+            var summaryEtag = EtagGenerator.Create(summary);
+            if (this.RequestHasMatchingEtag(summaryEtag))
+            {
+                return this.CachedStatus();
+            }
+
+            this.SetEtagHeader(summaryEtag);
+            return Ok(summary);
+        }
+
+        if (string.Equals(scope, "current", StringComparison.OrdinalIgnoreCase))
+        {
+            var currentBudgets = await _budgetService.GetCurrentMonthBudgetsAsync(userId);
+            var currentEtag = EtagGenerator.Create(currentBudgets);
+
+            if (this.RequestHasMatchingEtag(currentEtag))
+            {
+                return this.CachedStatus();
+            }
+
+            this.SetEtagHeader(currentEtag);
+            return Ok(currentBudgets);
+        }
+
         var budgets = await _budgetService.GetAllAsync(userId, year, month);
+        var etag = EtagGenerator.Create(budgets);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(budgets);
     }
 
@@ -58,6 +125,14 @@ public class BudgetsController : ControllerBase
         };
 
         var result = await _budgetService.GetPagedAsync(userId, paginationParams, year, month);
+        var etag = EtagGenerator.Create(result);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(result);
     }
 
@@ -75,6 +150,14 @@ public class BudgetsController : ControllerBase
         if (budget == null)
             return NotFound(new { message = "Orçamento não encontrado" });
 
+        var etag = EtagGenerator.Create(budget);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(budget);
     }
 
@@ -95,51 +178,15 @@ public class BudgetsController : ControllerBase
         if (budget == null)
             return NotFound(new { message = "Orçamento não encontrado para esta categoria e período" });
 
-        return Ok(budget);
-    }
+        var etag = EtagGenerator.Create(budget);
 
-    /// <summary>
-    /// Lista orçamentos do mês atual
-    /// </summary>
-    [HttpGet("current")]
-    [ProducesResponseType(typeof(IEnumerable<BudgetResponseDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetCurrentMonth()
-    {
-        var userId = GetUserId();
-        var budgets = await _budgetService.GetCurrentMonthBudgetsAsync(userId);
-        return Ok(budgets);
-    }
-
-    /// <summary>
-    /// Resumo do orçamento mensal
-    /// </summary>
-    [HttpGet("summary")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetSummary([FromQuery] int? month, [FromQuery] int? year)
-    {
-        var userId = GetUserId();
-        var now = DateTime.UtcNow;
-        var targetMonth = month ?? now.Month;
-        var targetYear = year ?? now.Year;
-
-        var totalBudget = await _budgetService.GetTotalBudgetForMonthAsync(userId, targetMonth, targetYear);
-        var totalSpent = await _budgetService.GetTotalSpentForMonthAsync(userId, targetMonth, targetYear);
-        var remaining = totalBudget - totalSpent;
-        var percentageUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
-
-        return Ok(new
+        if (this.RequestHasMatchingEtag(etag))
         {
-            month = targetMonth,
-            year = targetYear,
-            totalBudget,
-            totalSpent,
-            remaining,
-            percentageUsed = Math.Round(percentageUsed, 2),
-            status = percentageUsed >= 100 ? "Excedido" 
-                   : percentageUsed >= 80 ? "Crítico" 
-                   : percentageUsed >= 50 ? "Alerta" 
-                   : "Normal"
-        });
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
+        return Ok(budget);
     }
 
     /// <summary>

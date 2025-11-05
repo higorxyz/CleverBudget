@@ -1,9 +1,10 @@
 # API Endpoints – CleverBudget
 
 ## Bases de URL
-- Desenvolvimento HTTP: `http://localhost:5220/api`
-- Desenvolvimento HTTPS: `https://localhost:7035/api`
-- Produção (Railway): `https://cleverbudget-production.up.railway.app/api`
+- Desenvolvimento HTTP: `http://localhost:5220/api/v2`
+- Desenvolvimento HTTPS: `https://localhost:7035/api/v2`
+- Produção (Railway): `https://cleverbudget-production.up.railway.app/api/v2`
+- Versão padrão: `v2`. Ajuste o segmento após `/api/` para acessar versões anteriores, se disponíveis.
 
 ## Convenções
 - Endpoints marcados com "Requer token" precisam do header `Authorization: Bearer <jwt>`.
@@ -15,7 +16,7 @@
 
 ---
 
-## Autenticação (`/api/auth`)
+## Autenticação (`/api/v2/auth`)
 
 ### POST `/register`
 - Cria usuário com nome e sobrenome.
@@ -48,7 +49,7 @@
 
 ---
 
-## Perfil (`/api/profile`)
+## Perfil (`/api/v2/profile`)
 
 ### GET `/`
 - Requer token.
@@ -82,32 +83,33 @@
 
 ---
 
-## Orçamentos (`/api/budgets`)
+## Orçamentos (`/api/v2/budgets`)
 
 ### GET `/`
-- Query opcional: `year`, `month`.
-- 200 OK: lista de `BudgetResponseDto` com campos como `amount`, `spent`, `remaining`, `percentageUsed`, status (`Normal`, `Alerta`, `Crítico`, `Excedido`).
+- Query opcional: `year`, `month`, `scope`, `view`.
+- `scope=current` retorna apenas os orçamentos do mês vigente.
+- `view=summary` retorna um objeto com totais agregados (exemplo abaixo).
+- Sem parâmetros especiais, 200 OK: lista de `BudgetResponseDto` com campos como `amount`, `spent`, `remaining`, `percentageUsed`, status (`Normal`, `Alerta`, `Crítico`, `Excedido`).
 
 ### GET `/paged`
 - Query extra: `page`, `pageSize` (máx 100), `sortBy`, `sortOrder`.
 - Retorna `PagedResult<BudgetResponseDto>`.
 
-### GET `/{id}` | GET `/category/{categoryId}/period?month=&year=` | GET `/current`
-- Buscam orçamento específico, por categoria/período ou todos do mês atual.
+### GET `/{id}` | GET `/category/{categoryId}/period?month=&year=`
+- Buscam orçamento específico ou por categoria/período.
 
-### GET `/summary?month=&year=`
-- 200 OK:
-  ```json
-  {
-    "month": 11,
-    "year": 2025,
-    "totalBudget": 2500.00,
-    "totalSpent": 1800.00,
-    "remaining": 700.00,
-    "percentageUsed": 72.0,
-    "status": "Alerta"
-  }
-  ```
+#### Exemplo de resumo (`GET /?view=summary`)
+```json
+{
+  "month": 11,
+  "year": 2025,
+  "totalBudget": 2500.00,
+  "totalSpent": 1800.00,
+  "remaining": 700.00,
+  "percentageUsed": 72.0,
+  "status": "Alerta"
+}
+```
 
 ### POST `/`
 - Corpo:
@@ -133,7 +135,7 @@
 
 ---
 
-## Categorias (`/api/categories`)
+## Categorias (`/api/v2/categories`)
 
 ### GET `/`
 - Query: `page`, `pageSize`, `sortBy` (name|createdAt|isDefault), `sortOrder`.
@@ -149,7 +151,7 @@
 
 ---
 
-## Transações (`/api/transactions`)
+## Transações (`/api/v2/transactions`)
 
 ### GET `/`
 - Query: `page`, `pageSize`, `sortBy` (`date|amount|description|category`), `sortOrder`, `type`, `categoryId`, `startDate`, `endDate`.
@@ -202,7 +204,7 @@
 
 ---
 
-## Transações recorrentes (`/api/recurringtransactions`)
+## Transações recorrentes (`/api/v2/recurringtransactions`)
 
 ### GET `/`
 - Query: `page`, `pageSize`, `sortBy` (`amount|description|frequency|startDate`), `sortOrder`, `isActive`.
@@ -224,14 +226,12 @@
     "dayOfMonth": 1
   }
   ```
-- Atualização permite ajustar `amount`, `description`, `endDate`.
-
-### PATCH `/{id}/toggle-active`
-- Alterna entre ativo/inativo. 404 se não pertencer ao usuário.
+- Atualização permite ajustar `amount`, `description`, `endDate` e `isActive`.
+- Para desativar/reativar use `PUT /api/v2/recurringtransactions/{id}` com `{"isActive": false}` ou `{"isActive": true}`.
 
 ---
 
-## Metas (`/api/goals`)
+## Metas (`/api/v2/goals`)
 
 ### GET `/`
 - Query: `page`, `pageSize`, `sortBy` (`targetAmount|category|month|year`), `sortOrder`, `month`, `year`.
@@ -249,7 +249,7 @@
 
 ---
 
-## Relatórios (`/api/reports`)
+## Relatórios (`/api/v2/reports`)
 
 ### GET `/summary`
 - Query: `startDate`, `endDate`.
@@ -277,7 +277,7 @@
 
 ---
 
-## Exportação (`/api/export`)
+## Exportação (`/api/v2/export`)
 
 ### CSV
 - `GET /transactions/csv?startDate=&endDate=`
@@ -293,7 +293,7 @@
 
 ---
 
-## Backups (`/api/backups`)
+## Backups (`/api/v2/backups`)
 
 - `GET /` — Lista backups disponíveis no diretório configurado. Retorna `fileName`, `sizeBytes` e `createdAt`.
 - `POST /?download=false` — Gera novo backup. Se `download=true`, faz o download imediato do arquivo compactado (`application/gzip`). Caso contrário, grava no disco e responde com `fileName` e `storedOnDisk` (sem expor o caminho físico).
@@ -314,7 +314,7 @@ Content-Type: application/json
 
 Exemplo PowerShell:
 ```powershell
-Invoke-RestMethod -Method Get "https://localhost:7035/api/transactions?page=1" -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Method Get "https://localhost:7035/api/v2/transactions?page=1" -Headers @{ Authorization = "Bearer $token" }
 ```
 
 ---
@@ -324,3 +324,18 @@ Invoke-RestMethod -Method Get "https://localhost:7035/api/transactions?page=1" -
 - [ENVIRONMENT_VARIABLES.md](./ENVIRONMENT_VARIABLES.md)
 - [ERROR_MESSAGES.md](./ERROR_MESSAGES.md)
 - [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md)
+
+---
+
+## Legacy v1
+
+A versão v1 permanece acessível para integrações existentes e mantém o comportamento original sem versionamento segmentado.
+
+- Base URL: `http(s)://<host>/api`
+- Principais características:
+  - `GET /api/budgets/summary` e `GET /api/budgets/current` continuam disponíveis.
+  - Alternar status de transações recorrentes é feito via `POST /api/recurringtransactions/{id}/toggle`.
+  - Não há cabeçalhos ETag ou tratamento condicional de cache.
+  - Rotas aceitam os mesmos payloads dos exemplos acima, exceto pelos ajustes mencionados.
+
+Planeje migrar para `/api/v2` para aproveitar os recursos mais recentes (versionamento explícito, rotas mais RESTful e respostas com ETag). Enquanto isso, utilize esta seção como referência de compatibilidade.

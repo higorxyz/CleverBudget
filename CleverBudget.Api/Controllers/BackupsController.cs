@@ -1,3 +1,5 @@
+using Asp.Versioning;
+using CleverBudget.Api.Extensions;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -14,8 +16,9 @@ using Microsoft.Extensions.Options;
 
 namespace CleverBudget.Api.Controllers;
 
+[ApiVersion("2.0")]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Authorize]
 public class BackupsController : ControllerBase
 {
@@ -60,6 +63,14 @@ public class BackupsController : ControllerBase
             .OrderByDescending(file => file.CreatedAtUtc)
             .ToList();
 
+        var etag = EtagGenerator.Create(backups);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(backups);
     }
 
@@ -74,7 +85,7 @@ public class BackupsController : ControllerBase
             return File(result.Content, "application/gzip", result.FileName);
         }
 
-    return Ok(new BackupCreatedResponse(result.FileName, StoredOnDisk: !string.IsNullOrEmpty(result.StoredAt)));
+        return Ok(new BackupCreatedResponse(result.FileName, StoredOnDisk: !string.IsNullOrEmpty(result.StoredAt)));
     }
 
     [HttpGet("{fileName}")]

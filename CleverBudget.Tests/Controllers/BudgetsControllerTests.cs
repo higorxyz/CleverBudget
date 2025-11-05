@@ -56,9 +56,10 @@ public class BudgetsControllerTests
         var result = await _controller.GetAll(null, null);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedBudgets = Assert.IsAssignableFrom<IEnumerable<BudgetResponseDto>>(okResult.Value);
-        Assert.Equal(2, returnedBudgets.Count());
+    var okResult = Assert.IsType<OkObjectResult>(result);
+    var returnedBudgets = Assert.IsAssignableFrom<IEnumerable<BudgetResponseDto>>(okResult.Value);
+    Assert.True(_controller.Response.Headers.ContainsKey("ETag"));
+    Assert.Equal(2, returnedBudgets.Count());
     }
 
     [Fact]
@@ -78,9 +79,10 @@ public class BudgetsControllerTests
         var result = await _controller.GetAll(2025, null);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedBudgets = Assert.IsAssignableFrom<IEnumerable<BudgetResponseDto>>(okResult.Value);
-        Assert.Single(returnedBudgets);
+    var okResult = Assert.IsType<OkObjectResult>(result);
+    var returnedBudgets = Assert.IsAssignableFrom<IEnumerable<BudgetResponseDto>>(okResult.Value);
+    Assert.True(_controller.Response.Headers.ContainsKey("ETag"));
+    Assert.Single(returnedBudgets);
     }
 
     [Fact]
@@ -106,9 +108,10 @@ public class BudgetsControllerTests
         var result = await _controller.GetPaged();
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedResult = Assert.IsType<PagedResult<BudgetResponseDto>>(okResult.Value);
-        Assert.Single(returnedResult.Items);
+    var okResult = Assert.IsType<OkObjectResult>(result);
+    var returnedResult = Assert.IsType<PagedResult<BudgetResponseDto>>(okResult.Value);
+    Assert.True(_controller.Response.Headers.ContainsKey("ETag"));
+    Assert.Single(returnedResult.Items);
     }
 
     [Fact]
@@ -125,9 +128,10 @@ public class BudgetsControllerTests
         var result = await _controller.GetById(1);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedBudget = Assert.IsType<BudgetResponseDto>(okResult.Value);
-        Assert.Equal(1, returnedBudget.Id);
+    var okResult = Assert.IsType<OkObjectResult>(result);
+    var returnedBudget = Assert.IsType<BudgetResponseDto>(okResult.Value);
+    Assert.True(_controller.Response.Headers.ContainsKey("ETag"));
+    Assert.Equal(1, returnedBudget.Id);
     }
 
     [Fact]
@@ -160,9 +164,10 @@ public class BudgetsControllerTests
         var result = await _controller.GetByCategoryAndPeriod(5, 11, 2025);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedBudget = Assert.IsType<BudgetResponseDto>(okResult.Value);
-        Assert.Equal(5, returnedBudget.CategoryId);
+    var okResult = Assert.IsType<OkObjectResult>(result);
+    var returnedBudget = Assert.IsType<BudgetResponseDto>(okResult.Value);
+    Assert.True(_controller.Response.Headers.ContainsKey("ETag"));
+    Assert.Equal(5, returnedBudget.CategoryId);
     }
 
     [Fact]
@@ -181,7 +186,7 @@ public class BudgetsControllerTests
     }
 
     [Fact]
-    public async Task GetCurrentMonth_ReturnsCurrentMonthBudgets()
+    public async Task GetAll_WithCurrentScope_ReturnsCurrentMonthBudgets()
     {
         // Arrange
         var budgets = new List<BudgetResponseDto>
@@ -194,16 +199,17 @@ public class BudgetsControllerTests
             .ReturnsAsync(budgets);
 
         // Act
-        var result = await _controller.GetCurrentMonth();
+        var result = await _controller.GetAll(null, null, scope: "current");
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         var returnedBudgets = Assert.IsAssignableFrom<IEnumerable<BudgetResponseDto>>(okResult.Value);
+        Assert.True(_controller.Response.Headers.ContainsKey("ETag"));
         Assert.Single(returnedBudgets);
     }
 
     [Fact]
-    public async Task GetSummary_ReturnsCorrectCalculations()
+    public async Task GetAll_WithSummaryView_ReturnsCorrectCalculations()
     {
         // Arrange
         _budgetServiceMock
@@ -215,15 +221,16 @@ public class BudgetsControllerTests
             .ReturnsAsync(8500m);
 
         // Act
-        var result = await _controller.GetSummary(null, null);
+        var result = await _controller.GetAll(null, null, view: "summary");
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.NotNull(okResult.Value);
-        
+        Assert.True(_controller.Response.Headers.ContainsKey("ETag"));
+
         var summary = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(
             System.Text.Json.JsonSerializer.Serialize(okResult.Value));
-        
+
         Assert.Equal(10000m, summary.GetProperty("totalBudget").GetDecimal());
         Assert.Equal(8500m, summary.GetProperty("totalSpent").GetDecimal());
         Assert.Equal(1500m, summary.GetProperty("remaining").GetDecimal());
@@ -232,7 +239,7 @@ public class BudgetsControllerTests
     }
 
     [Fact]
-    public async Task GetSummary_OverBudget_ReturnsExcedidoStatus()
+    public async Task GetAll_WithSummaryViewAndOverBudget_ReturnsExcedidoStatus()
     {
         // Arrange
         _budgetServiceMock
@@ -244,15 +251,16 @@ public class BudgetsControllerTests
             .ReturnsAsync(12000m);
 
         // Act
-        var result = await _controller.GetSummary(null, null);
+        var result = await _controller.GetAll(null, null, view: "summary");
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.NotNull(okResult.Value);
-        
+        Assert.True(_controller.Response.Headers.ContainsKey("ETag"));
+
         var summary = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(
             System.Text.Json.JsonSerializer.Serialize(okResult.Value));
-        
+
         Assert.Equal("Excedido", summary.GetProperty("status").GetString());
     }
 

@@ -16,6 +16,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
 {
     private readonly CustomWebApplicationFactory _factory;
     private readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
+    private const string ApiBase = "/api/v2";
 
     public ApiIntegrationTests(CustomWebApplicationFactory factory)
     {
@@ -29,7 +30,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         var email = CreateUniqueEmail();
         var registerDto = BuildRegisterDto(email);
 
-        var response = await client.PostAsJsonAsync("/api/auth/register", registerDto);
+        var response = await client.PostAsJsonAsync($"{ApiBase}/auth/register", registerDto);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -46,7 +47,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         var email = CreateUniqueEmail();
         var registerDto = BuildRegisterDto(email);
 
-        await client.PostAsJsonAsync("/api/auth/register", registerDto);
+        await client.PostAsJsonAsync($"{ApiBase}/auth/register", registerDto);
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -62,7 +63,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
             Password = registerDto.Password
         };
 
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", loginDto);
+        var loginResponse = await client.PostAsJsonAsync($"{ApiBase}/auth/login", loginDto);
 
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
 
@@ -79,7 +80,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         var email = CreateUniqueEmail();
         var registerDto = BuildRegisterDto(email);
 
-        await client.PostAsJsonAsync("/api/auth/register", registerDto);
+        await client.PostAsJsonAsync($"{ApiBase}/auth/register", registerDto);
 
         var loginDto = new LoginDto
         {
@@ -87,7 +88,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
             Password = "Wrong123!"
         };
 
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", loginDto);
+        var loginResponse = await client.PostAsJsonAsync($"{ApiBase}/auth/login", loginDto);
 
         Assert.Equal(HttpStatusCode.Unauthorized, loginResponse.StatusCode);
     }
@@ -99,9 +100,9 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         var email = CreateUniqueEmail();
         var registerDto = BuildRegisterDto(email);
 
-        await client.PostAsJsonAsync("/api/auth/register", registerDto);
+        await client.PostAsJsonAsync($"{ApiBase}/auth/register", registerDto);
 
-        var duplicatedResponse = await client.PostAsJsonAsync("/api/auth/register", registerDto);
+        var duplicatedResponse = await client.PostAsJsonAsync($"{ApiBase}/auth/register", registerDto);
 
         Assert.Equal(HttpStatusCode.BadRequest, duplicatedResponse.StatusCode);
 
@@ -116,7 +117,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
     {
         using var client = CreateClient();
 
-        var response = await client.GetAsync("/api/profile");
+        var response = await client.GetAsync($"{ApiBase}/profile");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -128,13 +129,13 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         var email = CreateUniqueEmail();
         var registerDto = BuildRegisterDto(email);
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", registerDto);
+        var registerResponse = await client.PostAsJsonAsync($"{ApiBase}/auth/register", registerDto);
         var auth = await registerResponse.Content.ReadFromJsonAsync<AuthResponseDto>(_jsonOptions);
         Assert.NotNull(auth);
 
         AttachToken(client, auth!.Token);
 
-        var profileResponse = await client.GetAsync("/api/profile");
+        var profileResponse = await client.GetAsync($"{ApiBase}/profile");
         Assert.Equal(HttpStatusCode.OK, profileResponse.StatusCode);
 
         var profile = await profileResponse.Content.ReadFromJsonAsync<UserProfileDto>(_jsonOptions);
@@ -149,7 +150,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         var email = CreateUniqueEmail();
         var registerDto = BuildRegisterDto(email);
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", registerDto);
+        var registerResponse = await client.PostAsJsonAsync($"{ApiBase}/auth/register", registerDto);
         registerResponse.EnsureSuccessStatusCode();
         var auth = await registerResponse.Content.ReadFromJsonAsync<AuthResponseDto>(_jsonOptions);
         Assert.NotNull(auth);
@@ -163,7 +164,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
 
         AttachToken(client, auth!.Token);
 
-        var categoriesResponse = await client.GetAsync("/api/categories/all");
+        var categoriesResponse = await client.GetAsync($"{ApiBase}/categories/all");
         categoriesResponse.EnsureSuccessStatusCode();
         var categories = await categoriesResponse.Content.ReadFromJsonAsync<List<CategoryResponseDto>>(_jsonOptions);
         Assert.NotNull(categories);
@@ -180,7 +181,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
             Date = DateTime.UtcNow
         };
 
-        var transactionResponse = await client.PostAsJsonAsync("/api/transactions", createTransactionDto);
+        var transactionResponse = await client.PostAsJsonAsync($"{ApiBase}/transactions", createTransactionDto);
         Assert.Equal(HttpStatusCode.Created, transactionResponse.StatusCode);
 
         var createdTransaction = await transactionResponse.Content.ReadFromJsonAsync<TransactionResponseDto>(_jsonOptions);
@@ -189,7 +190,7 @@ public class ApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         Assert.Equal(createTransactionDto.Description, createdTransaction.Description);
         Assert.Equal(createTransactionDto.Type, createdTransaction.Type);
 
-        var transactionsListResponse = await client.GetAsync("/api/transactions");
+        var transactionsListResponse = await client.GetAsync($"{ApiBase}/transactions");
         transactionsListResponse.EnsureSuccessStatusCode();
 
         var pagedResult = await transactionsListResponse.Content.ReadFromJsonAsync<PagedResult<TransactionResponseDto>>(_jsonOptions);

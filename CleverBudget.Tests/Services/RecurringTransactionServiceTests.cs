@@ -631,6 +631,74 @@ public class RecurringTransactionServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateAsync_WithIsActiveFalse_DeactivatesTransaction()
+    {
+        var recurring = new RecurringTransaction
+        {
+            UserId = _testUserId,
+            Amount = 1000m,
+            Type = TransactionType.Income,
+            Description = "Ativo",
+            CategoryId = _testCategory.Id,
+            Frequency = RecurrenceFrequency.Monthly,
+            StartDate = DateTime.UtcNow.Date,
+            DayOfMonth = 10,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.RecurringTransactions.Add(recurring);
+        await _context.SaveChangesAsync();
+
+        var updateDto = new UpdateRecurringTransactionDto
+        {
+            IsActive = false
+        };
+
+        var result = await _service.UpdateAsync(recurring.Id, updateDto, _testUserId);
+
+        Assert.NotNull(result);
+        Assert.False(result.IsActive);
+
+        var updated = await _context.RecurringTransactions.FindAsync(recurring.Id);
+        Assert.NotNull(updated);
+        Assert.False(updated!.IsActive);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WithIsActiveTrue_ActivatesTransaction()
+    {
+        var recurring = new RecurringTransaction
+        {
+            UserId = _testUserId,
+            Amount = 1000m,
+            Type = TransactionType.Income,
+            Description = "Inativo",
+            CategoryId = _testCategory.Id,
+            Frequency = RecurrenceFrequency.Monthly,
+            StartDate = DateTime.UtcNow.Date,
+            DayOfMonth = 10,
+            IsActive = false,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.RecurringTransactions.Add(recurring);
+        await _context.SaveChangesAsync();
+
+        var updateDto = new UpdateRecurringTransactionDto
+        {
+            IsActive = true
+        };
+
+        var result = await _service.UpdateAsync(recurring.Id, updateDto, _testUserId);
+
+        Assert.NotNull(result);
+        Assert.True(result.IsActive);
+
+        var updated = await _context.RecurringTransactions.FindAsync(recurring.Id);
+        Assert.NotNull(updated);
+        Assert.True(updated!.IsActive);
+    }
+
+    [Fact]
     public async Task DeleteAsync_ExistingId_DeletesAndReturnsTrue()
     {
         var recurring = new RecurringTransaction
@@ -685,93 +753,6 @@ public class RecurringTransactionServiceTests : IDisposable
         await _context.SaveChangesAsync();
 
         var result = await _service.DeleteAsync(recurring.Id, _testUserId);
-
-        Assert.False(result);
-    }
-
-    [Fact]
-    public async Task ToggleActiveAsync_ActiveToInactive_TogglesCorrectly()
-    {
-        var recurring = new RecurringTransaction
-        {
-            UserId = _testUserId,
-            Amount = 1000m,
-            Type = TransactionType.Income,
-            Description = "Ativo",
-            CategoryId = _testCategory.Id,
-            Frequency = RecurrenceFrequency.Monthly,
-            StartDate = DateTime.UtcNow.Date,
-            DayOfMonth = 10,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
-        _context.RecurringTransactions.Add(recurring);
-        await _context.SaveChangesAsync();
-
-        var result = await _service.ToggleActiveAsync(recurring.Id, _testUserId);
-
-        Assert.True(result);
-        var updated = await _context.RecurringTransactions.FindAsync(recurring.Id);
-        Assert.NotNull(updated);
-        Assert.False(updated.IsActive);
-    }
-
-    [Fact]
-    public async Task ToggleActiveAsync_InactiveToActive_TogglesCorrectly()
-    {
-        var recurring = new RecurringTransaction
-        {
-            UserId = _testUserId,
-            Amount = 1000m,
-            Type = TransactionType.Income,
-            Description = "Inativo",
-            CategoryId = _testCategory.Id,
-            Frequency = RecurrenceFrequency.Monthly,
-            StartDate = DateTime.UtcNow.Date,
-            DayOfMonth = 10,
-            IsActive = false,
-            CreatedAt = DateTime.UtcNow
-        };
-        _context.RecurringTransactions.Add(recurring);
-        await _context.SaveChangesAsync();
-
-        var result = await _service.ToggleActiveAsync(recurring.Id, _testUserId);
-
-        Assert.True(result);
-        var updated = await _context.RecurringTransactions.FindAsync(recurring.Id);
-        Assert.NotNull(updated);
-        Assert.True(updated.IsActive);
-    }
-
-    [Fact]
-    public async Task ToggleActiveAsync_NonExistingId_ReturnsFalse()
-    {
-        var result = await _service.ToggleActiveAsync(9999, _testUserId);
-
-        Assert.False(result);
-    }
-
-    [Fact]
-    public async Task ToggleActiveAsync_IdFromAnotherUser_ReturnsFalse()
-    {
-        var otherUserId = Guid.NewGuid().ToString();
-        var recurring = new RecurringTransaction
-        {
-            UserId = otherUserId,
-            Amount = 1000m,
-            Type = TransactionType.Income,
-            Description = "Outro Usuário",
-            CategoryId = _testCategory.Id,
-            Frequency = RecurrenceFrequency.Monthly,
-            StartDate = DateTime.UtcNow.Date,
-            DayOfMonth = 10,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
-        _context.RecurringTransactions.Add(recurring);
-        await _context.SaveChangesAsync();
-
-        var result = await _service.ToggleActiveAsync(recurring.Id, _testUserId);
 
         Assert.False(result);
     }

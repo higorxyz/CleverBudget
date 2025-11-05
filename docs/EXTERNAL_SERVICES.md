@@ -26,11 +26,11 @@ Integrações não configuradas simplesmente degradam a funcionalidade (por exem
   - `Brevo__ApiKey` ou `BREVO__APIKEY`
   - `Brevo__FromEmail` / `Brevo__FromName` (opcional; possuem defaults)
 - **Fallback:** se `ApiKey` não estiver configurada, o `EmailService` retorna `false` e loga `⚠️ Brevo API Key não configurada!`.
-- **Teste rápido:** cadastre um usuário via `POST /api/auth/register` e verifique os logs; com a chave válida o envio aparece nos logs da Brevo.
+- **Teste rápido:** cadastre um usuário via `POST /api/v2/auth/register` e verifique os logs; com a chave válida o envio aparece nos logs da Brevo.
 
 ## Cloudinary (upload de foto)
 
-- **O que faz:** endpoint `POST /api/profile/photo` envia a imagem para a Cloudinary, aplica transformação `500x500` com `gravity=face` e moderação `aws_rek`. Se a moderação reprovar, o arquivo é apagado e o usuário recebe erro amigável.
+- **O que faz:** endpoint `POST /api/v2/profile/photo` envia a imagem para a Cloudinary, aplica transformação `500x500` com `gravity=face` e moderação `aws_rek`. Se a moderação reprovar, o arquivo é apagado e o usuário recebe erro amigável.
 - **Variáveis:** `Cloudinary__CloudName`, `Cloudinary__ApiKey`, `Cloudinary__ApiSecret` (ou equivalentes em maiúsculas).
 - **Comportamento sem credenciais:** a API responde `400` com mensagem "Falha ao processar upload da imagem" e registra um aviso.
 - **Limites padrão:** plano gratuito (25 GB armazenamento / 25 GB bandwidth por mês).
@@ -41,13 +41,13 @@ Integrações não configuradas simplesmente degradam a funcionalidade (por exem
 
 ## QuestPDF (relatórios PDF)
 
-- **Uso:** serviços de exportação (`ExportService`) geram PDFs para transações e relatórios financeiros (`GET /api/export/transactions/pdf`, `GET /api/export/financial-report/pdf`).
+- **Uso:** serviços de exportação (`ExportService`) geram PDFs para transações e relatórios financeiros (`GET /api/v2/export/transactions/pdf`, `GET /api/v2/export/financial-report/pdf`).
 - **Licença:** Community Edition (gratuita) – definido em `Program.cs`: `QuestPDF.Settings.License = LicenseType.Community;`.
 - **Dependências extras:** nenhuma. Certifique-se apenas de ter fontes padrão disponíveis no ambiente (Windows/Linux/macOS já possuem).
 
 ## CsvHelper (exportação CSV)
 
-- **Uso:** `ExportService` produz arquivos `.csv` para transações, categorias e metas (`/api/export/*/csv`).
+- **Uso:** `ExportService` produz arquivos `.csv` para transações, categorias e metas (`/api/v2/export/*/csv`).
 - **Configuração:** os mapas (`TransactionCsvMap`, etc.) convertem tipos enum em texto amigável em português.
 - **Codificação:** UTF-8 sem BOM, compatível com Excel/Google Sheets.
 
@@ -66,7 +66,7 @@ Integrações não configuradas simplesmente degradam a funcionalidade (por exem
 ## Como desligar funcionalidades
 
 - **Brevo:** omita `Brevo__ApiKey`. Os métodos retornam `false` e nenhuma exceção é lançada.
-- **Cloudinary:** omita as variáveis ou não chame o endpoint de upload (há um `PUT /api/profile/photo` legado que aceita URL direta sem Cloudinary).
+- **Cloudinary:** omita as variáveis ou não chame o endpoint de upload (há um `PUT /api/v2/profile/photo` legado que aceita URL direta sem Cloudinary).
 - **Exportações:** se não precisar de PDF/CSV, basta não usar os endpoints; as dependências continuam, mas não adicionam custo.
 
 ## Links úteis

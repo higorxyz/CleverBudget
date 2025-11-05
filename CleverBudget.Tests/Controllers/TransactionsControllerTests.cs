@@ -65,9 +65,10 @@ public class TransactionsControllerTests
         var result = await _controller.GetAll();
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedResult = Assert.IsType<PagedResult<TransactionResponseDto>>(okResult.Value);
-        Assert.Single(returnedResult.Items);
+    var okResult = Assert.IsType<OkObjectResult>(result);
+    var returnedResult = Assert.IsType<PagedResult<TransactionResponseDto>>(okResult.Value);
+    Assert.True(_controller.Response.Headers.ContainsKey("ETag"));
+    Assert.Single(returnedResult.Items);
     }
 
     [Fact]
@@ -99,9 +100,10 @@ public class TransactionsControllerTests
         var result = await _controller.GetAll(type: TransactionType.Expense);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedResult = Assert.IsType<PagedResult<TransactionResponseDto>>(okResult.Value);
-        Assert.Equal(TransactionType.Expense, returnedResult.Items.First().Type);
+    var okResult = Assert.IsType<OkObjectResult>(result);
+    var returnedResult = Assert.IsType<PagedResult<TransactionResponseDto>>(okResult.Value);
+    Assert.True(_controller.Response.Headers.ContainsKey("ETag"));
+    Assert.Equal(TransactionType.Expense, returnedResult.Items.First().Type);
     }
 
     [Fact]
@@ -160,9 +162,10 @@ public class TransactionsControllerTests
         var result = await _controller.GetById(1);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedTransaction = Assert.IsType<TransactionResponseDto>(okResult.Value);
-        Assert.Equal(1, returnedTransaction.Id);
+    var okResult = Assert.IsType<OkObjectResult>(result);
+    var returnedTransaction = Assert.IsType<TransactionResponseDto>(okResult.Value);
+    Assert.True(_controller.Response.Headers.ContainsKey("ETag"));
+    Assert.Equal(1, returnedTransaction.Id);
     }
 
     [Fact]

@@ -20,6 +20,7 @@ public class UpdateRecurringTransactionDto
     public decimal? Amount { get; set; }
     public string? Description { get; set; }
     public DateTime? EndDate { get; set; }
+    public bool? IsActive { get; set; }
 }
 
 public class RecurringTransactionResponseDto

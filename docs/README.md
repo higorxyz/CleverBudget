@@ -40,4 +40,4 @@ Bem-vindo à documentação técnica do CleverBudget! Esta pasta contém guias e
 ---
 
 **Última atualização:** Novembro 2025  
-**Versão da API:** 1.0.0
+**Versão da API:** 2.0 (v2 padrão, v1 disponível para compatibilidade)

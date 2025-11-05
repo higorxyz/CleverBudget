@@ -1,14 +1,18 @@
+using Asp.Versioning;
+using CleverBudget.Api.Extensions;
 using CleverBudget.Core.Common;
 using CleverBudget.Core.DTOs;
 using CleverBudget.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace CleverBudget.Api.Controllers;
 
+[ApiVersion("2.0")]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Authorize]
 public class CategoriesController : ControllerBase
 {
@@ -51,6 +55,13 @@ public class CategoriesController : ControllerBase
         };
 
         var result = await _categoryService.GetPagedAsync(userId, paginationParams);
+        var etag = EtagGenerator.Create(result);
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(result);
     }
 
@@ -62,6 +73,14 @@ public class CategoriesController : ControllerBase
     {
         var userId = GetUserId();
         var categories = await _categoryService.GetAllAsync(userId);
+        var etag = EtagGenerator.Create(categories);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(categories);
     }
 
@@ -77,6 +96,14 @@ public class CategoriesController : ControllerBase
         if (category == null)
             return NotFound(new { message = "Categoria não encontrada." });
 
+        var etag = EtagGenerator.Create(category);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(category);
     }
 

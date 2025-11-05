@@ -1,14 +1,18 @@
+using Asp.Versioning;
+using CleverBudget.Api.Extensions;
 using CleverBudget.Core.Common;
 using CleverBudget.Core.DTOs;
 using CleverBudget.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace CleverBudget.Api.Controllers;
 
+[ApiVersion("2.0")]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Authorize]
 public class GoalsController : ControllerBase
 {
@@ -55,6 +59,14 @@ public class GoalsController : ControllerBase
         };
 
         var result = await _goalService.GetPagedAsync(userId, paginationParams, month, year);
+        var etag = EtagGenerator.Create(result);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(result);
     }
 
@@ -68,6 +80,14 @@ public class GoalsController : ControllerBase
     {
         var userId = GetUserId();
         var goals = await _goalService.GetAllAsync(userId, month, year);
+        var etag = EtagGenerator.Create(goals);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(goals);
     }
 
@@ -83,6 +103,14 @@ public class GoalsController : ControllerBase
         if (goal == null)
             return NotFound(new { message = "Meta não encontrada." });
 
+        var etag = EtagGenerator.Create(goal);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(goal);
     }
 
@@ -139,6 +167,14 @@ public class GoalsController : ControllerBase
     {
         var userId = GetUserId();
         var status = await _goalService.GetStatusAsync(userId, month, year);
+        var etag = EtagGenerator.Create(status);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
         return Ok(status);
     }
 }
