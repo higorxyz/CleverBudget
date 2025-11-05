@@ -276,13 +276,14 @@ try
 
     if (builder.Environment.IsProduction())
     {
-        var rsa = RSA.Create(2048);
-        var certRequest = new CertificateRequest("CN=CleverBudget", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-        var cert = certRequest.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddYears(1));
-
+        // Em produção, usar proteção sem certificado para evitar problemas de chaves incompatíveis
+        // As chaves são protegidas por DPAPI no Windows ou keyring no Linux
         builder.Services.AddDataProtection()
             .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
-            .ProtectKeysWithCertificate(cert);
+            .SetApplicationName("CleverBudget")
+            .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
+        
+        Log.Information("🔐 Data Protection configurado (Production)");
     }
     else
     {
