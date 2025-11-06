@@ -11,27 +11,35 @@ namespace CleverBudget.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            if (migrationBuilder.ActiveProvider.Equals("Npgsql.EntityFrameworkCore.PostgreSQL", StringComparison.Ordinal))
-            {
-                migrationBuilder.Sql(
-                    "ALTER TABLE \"Transactions\" ADD COLUMN IF NOT EXISTS \"CreatedAt\" timestamp with time zone DEFAULT NOW();");
-
-                migrationBuilder.Sql(
-                    "UPDATE \"Transactions\" SET \"CreatedAt\" = COALESCE(\"CreatedAt\", \"Date\");");
-
-                migrationBuilder.Sql(
-                    "ALTER TABLE \"Transactions\" ALTER COLUMN \"CreatedAt\" SET NOT NULL;");
-            }
+            // PostgreSQL: Add column with conditional logic
+            migrationBuilder.Sql(
+                @"DO $$ 
+                BEGIN 
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'Transactions' AND column_name = 'CreatedAt'
+                    ) THEN
+                        ALTER TABLE ""Transactions"" ADD COLUMN ""CreatedAt"" timestamp with time zone DEFAULT NOW() NOT NULL;
+                        UPDATE ""Transactions"" SET ""CreatedAt"" = ""Date"" WHERE ""CreatedAt"" IS NULL;
+                    END IF;
+                END $$;",
+                suppressTransaction: false);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            if (migrationBuilder.ActiveProvider.Equals("Npgsql.EntityFrameworkCore.PostgreSQL", StringComparison.Ordinal))
-            {
-                migrationBuilder.Sql(
-                    "ALTER TABLE \"Transactions\" DROP COLUMN IF EXISTS \"CreatedAt\";");
-            }
+            migrationBuilder.Sql(
+                @"DO $$ 
+                BEGIN 
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'Transactions' AND column_name = 'CreatedAt'
+                    ) THEN
+                        ALTER TABLE ""Transactions"" DROP COLUMN ""CreatedAt"";
+                    END IF;
+                END $$;",
+                suppressTransaction: false);
         }
     }
 }
