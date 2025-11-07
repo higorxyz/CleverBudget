@@ -115,19 +115,20 @@ public class BackupsController : ControllerBase
     }
 
     [HttpPost("restore")]
+    [Consumes("multipart/form-data")]
     [RequestFormLimits(ValueLengthLimit = int.MaxValue, MultipartBodyLengthLimit = 1024L * 1024L * 100)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> RestoreBackup([FromForm] IFormFile file, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> RestoreBackup([FromForm] RestoreBackupRequest request, CancellationToken cancellationToken = default)
     {
-        if (file == null || file.Length == 0)
+        if (request?.File == null || request.File.Length == 0)
         {
             return BadRequest("Nenhum arquivo foi enviado.");
         }
 
-        await using var stream = file.OpenReadStream();
+        await using var stream = request.File.OpenReadStream();
         await _backupService.RestoreBackupAsync(stream, cancellationToken);
 
-        _logger.LogInformation("Backup {FileName} restaurado via API.", file.FileName);
+        _logger.LogInformation("Backup {FileName} restaurado via API.", request.File.FileName);
         return NoContent();
     }
 
@@ -153,4 +154,6 @@ public class BackupsController : ControllerBase
     }
 
     public record BackupCreatedResponse(string FileName, bool StoredOnDisk);
+
+    public record RestoreBackupRequest(IFormFile? File);
 }
