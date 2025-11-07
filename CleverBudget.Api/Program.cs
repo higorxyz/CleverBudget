@@ -419,6 +419,8 @@ try
         }
 
         options.RoutePrefix = string.Empty;
+        options.DocumentTitle = "CleverBudget API Documentation";
+        options.DefaultModelsExpandDepth(-1); // Oculta schemas por padrão
     });
 
     if (!app.Environment.IsProduction())
