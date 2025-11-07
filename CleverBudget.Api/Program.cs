@@ -326,6 +326,36 @@ try
 
                         if (hasTables)
                         {
+                            // Fix para schema desatualizado - adiciona colunas faltantes na tabela Goals
+                            try
+                            {
+                                Log.Information("🔧 Verificando e corrigindo schema da tabela Goals...");
+                                db.Database.ExecuteSqlRaw(@"
+                                    DO $$ 
+                                    BEGIN 
+                                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Goals' AND column_name = 'CategoryId') THEN
+                                            ALTER TABLE ""Goals"" ADD COLUMN ""CategoryId"" integer NOT NULL DEFAULT 0;
+                                            ALTER TABLE ""Goals"" ADD CONSTRAINT ""FK_Goals_Categories_CategoryId"" FOREIGN KEY (""CategoryId"") REFERENCES ""Categories"" (""Id"") ON DELETE RESTRICT;
+                                            CREATE INDEX ""IX_Goals_CategoryId"" ON ""Goals"" (""CategoryId"");
+                                        END IF;
+                                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Goals' AND column_name = 'Month') THEN
+                                            ALTER TABLE ""Goals"" ADD COLUMN ""Month"" integer NOT NULL DEFAULT 1;
+                                        END IF;
+                                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Goals' AND column_name = 'Year') THEN
+                                            ALTER TABLE ""Goals"" ADD COLUMN ""Year"" integer NOT NULL DEFAULT 2025;
+                                        END IF;
+                                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Goals' AND column_name = 'CreatedAt') THEN
+                                            ALTER TABLE ""Goals"" ADD COLUMN ""CreatedAt"" timestamp with time zone NOT NULL DEFAULT NOW();
+                                        END IF;
+                                    END $$;
+                                ");
+                                Log.Information("✅ Schema da tabela Goals verificado/corrigido");
+                            }
+                            catch (Exception fixEx)
+                            {
+                                Log.Warning(fixEx, "⚠️ Erro ao corrigir schema: {Message}", fixEx.Message);
+                            }
+
                             var pendingMigrations = db.Database.GetPendingMigrations().ToList();
 
                             if (pendingMigrations.Any())
