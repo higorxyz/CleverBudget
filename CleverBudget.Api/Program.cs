@@ -227,6 +227,8 @@ try
     }).AddApiExplorer(options =>
     {
         options.GroupNameFormat = "'v'V";
+        options.DefaultApiVersion = new ApiVersion(2, 0);
+        options.AssumeDefaultVersionWhenUnspecified = true;
         options.SubstituteApiVersionInUrl = true;
     });
 
