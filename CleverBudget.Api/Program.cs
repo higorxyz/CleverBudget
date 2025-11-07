@@ -226,7 +226,7 @@ try
             new QueryStringApiVersionReader("api-version"));
     }).AddApiExplorer(options =>
     {
-        options.GroupNameFormat = "'v'VVV";
+        options.GroupNameFormat = "'v'V";
         options.SubstituteApiVersionInUrl = true;
     });
 
