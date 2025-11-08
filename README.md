@@ -196,6 +196,9 @@ A documentação técnica completa está disponível na pasta [`/docs`](./docs/)
 - `GET /api/v2/reports/monthly` - Histórico mensal
 - `GET /api/v2/reports/detailed` - Relatório completo
 
+### Insights (v2)
+- `GET /api/v2/insights` - Gerar insights financeiros automáticos com filtros por período e categoria
+
 ### Perfil (v2)
 - `GET /api/v2/profile` - Ver perfil do usuário autenticado
 - `PUT /api/v2/profile` - Atualizar nome e sobrenome
@@ -241,7 +244,7 @@ A API utiliza **JWT Bearer Token**. Para acessar endpoints protegidos:
 - ✅ Deploy no Railway
 
 🟡 **Fase 3 — Inteligência e SaaS (Em andamento)**
-- ⬜ Insights financeiros automáticos
+- ✅ Insights financeiros automáticos
 - ⬜ Previsão de gastos
 - ⬜ Gamificação (conquistas/níveis)
 - ⬜ Multi-moeda (USD, EUR)

@@ -259,6 +259,7 @@ try
     builder.Services.AddScoped<IRecurringTransactionService, RecurringTransactionService>();
     builder.Services.AddScoped<IBudgetService, BudgetService>();
     builder.Services.AddScoped<IBackupService, BackupService>();
+    builder.Services.AddScoped<IFinancialInsightService, FinancialInsightService>();
     builder.Services.AddHostedService<RecurringTransactionGeneratorService>();
     builder.Services.AddHostedService<BudgetAlertService>();
     builder.Services.AddHostedService<BackupSchedulerService>();

@@ -277,6 +277,39 @@
 
 ---
 
+## Insights Financeiros (`/api/v2/insights`)
+
+### GET `/`
+- Query: `startDate`, `endDate`, `categoryId`, `includeIncomeInsights`, `includeExpenseInsights`.
+- Requer token. Constrói uma lista de `FinancialInsightDto` ordenados por severidade.
+- Cada insight inclui `category`, `severity`, `title`, `summary`, `recommendation`, `impactAmount`, `benchmarkAmount`, `generatedAt` e `dataPoints`.
+- Use `includeIncomeInsights=false` ou `includeExpenseInsights=false` para focar em um tipo de análise.
+
+#### Exemplo de resposta
+```json
+[
+  {
+    "category": "SpendingPattern",
+    "severity": "High",
+    "title": "Gastos elevados em Restaurantes",
+    "summary": "Os gastos atuais estão 60% acima da média dos últimos meses.",
+    "recommendation": "Analise as transações excepcionais e limite novos gastos até equilibrar o orçamento.",
+    "impactAmount": 180.0,
+    "benchmarkAmount": 300.0,
+    "generatedAt": "2025-11-07T12:34:56Z",
+    "dataPoints": [
+      {
+        "label": "Mês atual",
+        "value": 480.0,
+        "benchmark": 300.0
+      }
+    ]
+  }
+]
+```
+
+---
+
 ## Exportação (`/api/v2/export`)
 
 ### CSV

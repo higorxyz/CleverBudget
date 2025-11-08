@@ -17,6 +17,7 @@ Bem-vindo à documentação técnica do CleverBudget! Esta pasta contém guias e
 ### 📡 API Reference
 - **[Endpoints](./ENDPOINTS.md)** - Lista completa de endpoints disponíveis
 - **[Mensagens de Erro](./ERROR_MESSAGES.md)** - Códigos e mensagens de erro
+- **[Insights Financeiros](./INSIGHTS.md)** - Como funcionam os insights automáticos e parâmetros da API
 
 ### 💾 Banco de Dados
 - **[Schema do Banco](./DATABASE_SCHEMA.md)** - Estrutura das tabelas e relacionamentos
