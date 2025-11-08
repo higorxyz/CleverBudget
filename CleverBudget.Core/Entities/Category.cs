@@ -1,3 +1,5 @@
+using CleverBudget.Core.Enums;
+
 namespace CleverBudget.Core.Entities;
 
 public class Category
@@ -9,6 +11,9 @@ public class Category
     public string? Color { get; set; }
     public bool IsDefault { get; set; }
     public DateTime CreatedAt { get; set; }
+    public CategoryKind Kind { get; set; } = CategoryKind.Essential;
+    public string? Segment { get; set; }
+    public string Tags { get; set; } = "[]";
     
     public User User { get; set; } = null!;
     public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();

@@ -37,9 +37,24 @@ public class BudgetsController : ControllerBase
         [FromQuery] int? year,
         [FromQuery] int? month,
         [FromQuery] string? scope = null,
-        [FromQuery] string? view = null)
+        [FromQuery] string? view = null,
+        [FromQuery] int? trendMonths = null)
     {
         var userId = GetUserId();
+
+        if (string.Equals(view, "overview", StringComparison.OrdinalIgnoreCase))
+        {
+            var overview = await _budgetService.GetOverviewAsync(userId, year, month);
+            var overviewEtag = EtagGenerator.Create(overview);
+
+            if (this.RequestHasMatchingEtag(overviewEtag))
+            {
+                return this.CachedStatus();
+            }
+
+            this.SetEtagHeader(overviewEtag);
+            return Ok(overview);
+        }
 
         if (string.Equals(view, "summary", StringComparison.OrdinalIgnoreCase))
         {
@@ -88,6 +103,21 @@ public class BudgetsController : ControllerBase
 
             this.SetEtagHeader(currentEtag);
             return Ok(currentBudgets);
+        }
+
+        if (string.Equals(view, "trend", StringComparison.OrdinalIgnoreCase))
+        {
+            var effectiveMonths = trendMonths ?? 6;
+            var trend = await _budgetService.GetTrendAsync(userId, effectiveMonths);
+            var trendEtag = EtagGenerator.Create(trend);
+
+            if (this.RequestHasMatchingEtag(trendEtag))
+            {
+                return this.CachedStatus();
+            }
+
+            this.SetEtagHeader(trendEtag);
+            return Ok(trend);
         }
 
         var budgets = await _budgetService.GetAllAsync(userId, year, month);

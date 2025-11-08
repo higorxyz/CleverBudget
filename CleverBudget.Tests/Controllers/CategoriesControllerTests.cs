@@ -51,7 +51,7 @@ public class CategoriesControllerTests
         };
 
         _categoryServiceMock
-            .Setup(s => s.GetPagedAsync(UserId, It.IsAny<PaginationParams>()))
+            .Setup(s => s.GetPagedAsync(UserId, It.IsAny<PaginationParams>(), It.IsAny<CategoryFilterOptions?>(), false))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -263,7 +263,9 @@ public class CategoriesControllerTests
         _categoryServiceMock
             .Setup(s => s.GetPagedAsync(
                 UserId,
-                It.Is<PaginationParams>(p => p.Page == 2 && p.PageSize == 50)))
+                It.Is<PaginationParams>(p => p.Page == 2 && p.PageSize == 50),
+                It.IsAny<CategoryFilterOptions?>(),
+                false))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -272,7 +274,9 @@ public class CategoriesControllerTests
         // Assert
         _categoryServiceMock.Verify(s => s.GetPagedAsync(
             UserId,
-            It.Is<PaginationParams>(p => p.Page == 2 && p.PageSize == 50 && p.SortBy == "name" && p.SortOrder == "asc")),
+            It.Is<PaginationParams>(p => p.Page == 2 && p.PageSize == 50 && p.SortBy == "name" && p.SortOrder == "asc"),
+            It.IsAny<CategoryFilterOptions?>(),
+            false),
             Times.Once);
     }
 }

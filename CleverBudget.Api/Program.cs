@@ -3,6 +3,7 @@ using Asp.Versioning.ApiExplorer;
 using AspNetCoreRateLimit;
 using CleverBudget.Api.HealthChecks;
 using CleverBudget.Api.Swagger;
+using CleverBudget.Infrastructure.Notifications;
 using CleverBudget.Application.Validators;
 using CleverBudget.Core.Entities;
 using CleverBudget.Core.Interfaces;
@@ -200,16 +201,18 @@ try
         {
             options.InvalidModelStateResponseFactory = context =>
             {
-                var errors = context.ModelState
-                    .Where(e => e.Value?.Errors.Count > 0)
-                    .SelectMany(e => e.Value!.Errors.Select(x => x.ErrorMessage))
-                    .ToList();
-
-                return new BadRequestObjectResult(new
+                var problemDetails = new ValidationProblemDetails(context.ModelState)
                 {
-                    message = "Erro de validação",
-                    errors = errors
-                });
+                    Title = "Erro de validação",
+                    Detail = "Um ou mais campos estão inválidos.",
+                    Status = StatusCodes.Status400BadRequest,
+                    Instance = context.HttpContext.Request.Path
+                };
+
+                return new BadRequestObjectResult(problemDetails)
+                {
+                    ContentTypes = { "application/problem+json" }
+                };
             };
         });
 
@@ -251,10 +254,12 @@ try
     builder.Services.AddScoped<ITransactionService, TransactionService>();
     builder.Services.AddScoped<ICategoryService, CategoryService>();
     builder.Services.AddScoped<IGoalService, GoalService>();
+    builder.Services.AddSingleton<IRealtimeNotifier, NullRealtimeNotifier>();
     builder.Services.Configure<BackupOptions>(builder.Configuration.GetSection(BackupOptions.SectionName));
 
     builder.Services.AddScoped<IReportService, ReportService>();
     builder.Services.AddScoped<IExportService, ExportService>();
+    builder.Services.AddScoped<IExportDeliveryService, ExportDeliveryService>();
     builder.Services.AddScoped<IEmailService, EmailService>();
     builder.Services.AddScoped<IRecurringTransactionService, RecurringTransactionService>();
     builder.Services.AddScoped<IBudgetService, BudgetService>();

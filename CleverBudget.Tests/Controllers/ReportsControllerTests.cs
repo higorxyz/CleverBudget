@@ -1,5 +1,6 @@
 using CleverBudget.Api.Controllers;
 using CleverBudget.Core.DTOs;
+using CleverBudget.Core.Enums;
 using CleverBudget.Core.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -157,7 +158,7 @@ public class ReportsControllerTests
         };
 
         _reportServiceMock
-            .Setup(s => s.GetMonthlyReportAsync(UserId, 12))
+            .Setup(s => s.GetMonthlyReportAsync(UserId, 12, It.IsAny<ReportGroupBy>()))
             .ReturnsAsync(monthlyReport);
 
         // Act
@@ -176,14 +177,14 @@ public class ReportsControllerTests
         var monthlyReport = new List<MonthlyReportDto>();
 
         _reportServiceMock
-            .Setup(s => s.GetMonthlyReportAsync(UserId, 6))
+            .Setup(s => s.GetMonthlyReportAsync(UserId, 6, It.IsAny<ReportGroupBy>()))
             .ReturnsAsync(monthlyReport);
 
         // Act
         await _controller.GetMonthlyReport(6);
 
         // Assert
-        _reportServiceMock.Verify(s => s.GetMonthlyReportAsync(UserId, 6), Times.Once);
+    _reportServiceMock.Verify(s => s.GetMonthlyReportAsync(UserId, 6, It.IsAny<ReportGroupBy>()), Times.Once);
     }
 
     [Fact]

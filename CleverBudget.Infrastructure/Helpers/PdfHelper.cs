@@ -1,3 +1,4 @@
+using System.Globalization;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -62,9 +63,10 @@ public static class PdfHelper
     /// <summary>
     /// Formata valor monetário
     /// </summary>
-    public static string FormatCurrency(decimal value)
+    public static string FormatCurrency(decimal value, CultureInfo? culture = null)
     {
-        return value.ToString("C2", new System.Globalization.CultureInfo("pt-BR"));
+        var effectiveCulture = culture ?? CultureInfo.GetCultureInfo("pt-BR");
+        return value.ToString("C2", effectiveCulture);
     }
 
     /// <summary>

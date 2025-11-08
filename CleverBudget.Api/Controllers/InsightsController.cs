@@ -50,4 +50,22 @@ public class InsightsController : ControllerBase
         var insights = await _financialInsightService.GenerateInsightsAsync(userId, filter, cancellationToken);
         return Ok(insights);
     }
+
+    [HttpGet("history")]
+    [ProducesResponseType(typeof(IEnumerable<FinancialInsightDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetHistory(
+        [FromQuery] int days = 30,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        var clampedDays = Math.Clamp(days, 1, 365);
+        var insights = await _financialInsightService.GetHistoryAsync(userId, clampedDays, cancellationToken);
+        return Ok(insights);
+    }
 }

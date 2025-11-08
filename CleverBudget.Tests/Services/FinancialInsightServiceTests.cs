@@ -5,6 +5,7 @@ using CleverBudget.Infrastructure.Data;
 using CleverBudget.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Linq;
 using Xunit;
 
 namespace CleverBudget.Tests.Services;
@@ -108,6 +109,35 @@ public class FinancialInsightServiceTests : IDisposable
         var insights = await _service.GenerateInsightsAsync(_userId, filter, CancellationToken.None);
 
         Assert.DoesNotContain(insights, i => i.Category == InsightCategory.SpendingPattern);
+    }
+
+    [Fact]
+    public async Task GenerateInsightsAsync_PersistsRecords()
+    {
+        SeedExpenseHistory();
+
+        var filter = new FinancialInsightFilter();
+
+        var insights = await _service.GenerateInsightsAsync(_userId, filter, CancellationToken.None);
+
+        var records = await _context.FinancialInsights
+            .Where(r => r.UserId == _userId)
+            .ToListAsync();
+
+        Assert.NotEmpty(insights);
+        Assert.Equal(insights.Count, records.Count);
+    }
+
+    [Fact]
+    public async Task GetHistoryAsync_ReturnsPersistedInsights()
+    {
+        SeedExpenseHistory();
+        await _service.GenerateInsightsAsync(_userId, new FinancialInsightFilter(), CancellationToken.None);
+
+        var history = await _service.GetHistoryAsync(_userId, 30, CancellationToken.None);
+
+        Assert.NotEmpty(history);
+        Assert.All(history, h => Assert.False(string.IsNullOrWhiteSpace(h.Title)));
     }
 
     private void SeedExpenseHistory()

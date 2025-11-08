@@ -1,3 +1,5 @@
+using System;
+
 namespace CleverBudget.Core.DTOs;
 
 public class SummaryReportDto
@@ -8,6 +10,11 @@ public class SummaryReportDto
     public int TransactionCount { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
+    public decimal IncomeChangePercentage { get; set; }
+    public decimal ExpenseChangePercentage { get; set; }
+    public decimal BalanceChangePercentage { get; set; }
+    public decimal AverageDailySpend { get; set; }
+    public decimal SavingsRatePercentage { get; set; }
 }
 
 public class CategoryReportDto
@@ -30,6 +37,10 @@ public class MonthlyReportDto
     public decimal TotalExpenses { get; set; }
     public decimal Balance { get; set; }
     public int TransactionCount { get; set; }
+    public string GroupLabel { get; set; } = string.Empty;
+    public ReportGroupBy GroupBy { get; set; } = ReportGroupBy.Month;
+    public DateTime PeriodStart { get; set; }
+    public DateTime PeriodEnd { get; set; }
 }
 
 public class DetailedReportDto
@@ -38,4 +49,11 @@ public class DetailedReportDto
     public List<CategoryReportDto> TopExpenseCategories { get; set; } = new();
     public List<CategoryReportDto> TopIncomeCategories { get; set; } = new();
     public List<MonthlyReportDto> MonthlyHistory { get; set; } = new();
+}
+
+public enum ReportGroupBy
+{
+    Month,
+    Week,
+    Year
 }

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CleverBudget.Core.Enums;
 
 namespace CleverBudget.Core.DTOs;
@@ -32,4 +33,31 @@ public class TransactionResponseDto
     public string CategoryColor { get; set; } = string.Empty;
     public DateTime Date { get; set; }
     public DateTime CreatedAt { get; set; }
+    public TransactionCategoryDto? Category { get; set; }
+}
+
+public class TransactionCategoryDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Icon { get; set; }
+    public string? Color { get; set; }
+    public CategoryKind Kind { get; set; }
+    public string Segment { get; set; } = string.Empty;
+    public IReadOnlyCollection<string> Tags { get; set; } = Array.Empty<string>();
+}
+
+public class TransactionImportOptions
+{
+    public bool HasHeader { get; set; } = true;
+    public string Delimiter { get; set; } = ",";
+    public bool UpsertExisting { get; set; }
+    public string CategoryFallbackKind { get; set; } = CategoryKind.Essential.ToString();
+}
+
+public class TransactionImportResultDto
+{
+    public int Imported { get; set; }
+    public int Skipped { get; set; }
+    public List<string> Errors { get; set; } = new();
 }

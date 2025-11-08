@@ -1,4 +1,5 @@
 using CleverBudget.Core.Entities;
+using CleverBudget.Core.Enums;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +16,7 @@ public class AppDbContext : IdentityDbContext<User>
     public DbSet<Goal> Goals { get; set; }
     public DbSet<RecurringTransaction> RecurringTransactions { get; set; }
     public DbSet<Budget> Budgets { get; set; }
+    public DbSet<FinancialInsightRecord> FinancialInsights { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -53,6 +55,15 @@ public class AppDbContext : IdentityDbContext<User>
             entity.Property(c => c.Color).HasMaxLength(20);
             entity.Property(c => c.IsDefault).HasConversion<bool>();
             entity.Property(c => c.CreatedAt).IsRequired();
+            entity.Property(c => c.Kind)
+                .HasConversion<string>()
+                .HasMaxLength(30)
+                .HasDefaultValue(CategoryKind.Essential);
+            entity.Property(c => c.Segment)
+                .HasMaxLength(120);
+            entity.Property(c => c.Tags)
+                .HasColumnType("text")
+                .HasDefaultValue("[]");
 
             entity.HasOne(c => c.User)
                 .WithMany(u => u.Categories)
@@ -130,6 +141,29 @@ public class AppDbContext : IdentityDbContext<User>
         modelBuilder.Entity<User>(entity =>
         {
             entity.Property(u => u.CreatedAt).IsRequired();
+        });
+
+        modelBuilder.Entity<FinancialInsightRecord>(entity =>
+        {
+            entity.HasKey(f => f.Id);
+            entity.Property(f => f.Title).HasMaxLength(200).IsRequired();
+            entity.Property(f => f.Summary).HasMaxLength(1000);
+            entity.Property(f => f.Recommendation).HasMaxLength(1500);
+            entity.Property(f => f.DataPointsJson).HasColumnType("text").IsRequired();
+            entity.Property(f => f.ImpactAmount).HasColumnType("decimal(18,2)");
+            entity.Property(f => f.BenchmarkAmount).HasColumnType("decimal(18,2)");
+            entity.Property(f => f.Category).HasConversion<string>().HasMaxLength(50);
+            entity.Property(f => f.Severity).HasConversion<string>().HasMaxLength(20);
+            entity.Property(f => f.IncludeIncomeInsights).HasConversion<bool>();
+            entity.Property(f => f.IncludeExpenseInsights).HasConversion<bool>();
+
+            entity.HasOne(f => f.User)
+                .WithMany()
+                .HasForeignKey(f => f.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(f => new { f.UserId, f.GeneratedAt });
+            entity.HasIndex(f => new { f.UserId, f.Category, f.Severity });
         });
     }
 }

@@ -89,7 +89,14 @@
 - Query opcional: `year`, `month`, `scope`, `view`.
 - `scope=current` retorna apenas os orçamentos do mês vigente.
 - `view=summary` retorna um objeto com totais agregados (exemplo abaixo).
-- Sem parâmetros especiais, 200 OK: lista de `BudgetResponseDto` com campos como `amount`, `spent`, `remaining`, `percentageUsed`, status (`Normal`, `Alerta`, `Crítico`, `Excedido`).
+- `view=overview` retorna `BudgetOverviewDto` com totais consolidados, categorias em risco/conforto e recomendações para dashboards.
+- Sem parâmetros especiais, 200 OK: lista de `BudgetResponseDto` com indicadores detalhados:
+  - `historicalAverage`: média de gastos dos últimos 3 meses na categoria.
+  - `projectedSpend`: projeção para o encerramento do mês considerando o ritmo atual.
+  - `suggestedBudget`: sugestão de ajuste (expande quando há risco de estouro, reduz quando há folga consistente).
+  - `budgetVariance` / `projectedVariance`: diferença vs histórico e vs orçamento planejado.
+  - `dailyBudget`, `burnRate`, `burnRateVariance`: acompanhamento diário.
+  - `transactionsCount`, `lastTransactionDate`, `recommendation` personalizada para ação rápida.
 
 ### GET `/paged`
 - Query extra: `page`, `pageSize` (máx 100), `sortBy`, `sortOrder`.
@@ -108,6 +115,84 @@
   "remaining": 700.00,
   "percentageUsed": 72.0,
   "status": "Alerta"
+}
+```
+
+#### Exemplo de visão consolidada (`GET /?view=overview`)
+```json
+{
+  "month": 11,
+  "year": 2025,
+  "totalBudget": 3200.00,
+  "totalSpent": 2150.00,
+  "remaining": 1050.00,
+  "percentageUsed": 67.19,
+  "suggestedReallocation": 420.00,
+  "recommendation": "Há 1 categorias em risco em novembro/2025. Priorize ajustes em Alimentação com excedente projetado de R$ 150,00.",
+  "categories": [
+    {
+      "budgetId": 48,
+      "categoryId": 5,
+      "categoryName": "Alimentação",
+      "amount": 1200.00,
+      "spent": 950.00,
+      "remaining": 250.00,
+      "percentageUsed": 79.17,
+      "status": "Crítico",
+      "projectedSpend": 1350.00,
+      "projectedVariance": 150.00,
+      "suggestedBudget": 1417.50,
+      "budgetVariance": 300.00,
+      "potentialReallocation": 0.00,
+      "dailyBudget": 40.00,
+      "burnRate": 45.00,
+      "burnRateVariance": 5.00,
+      "transactionsCount": 12,
+      "lastTransactionDate": "2025-11-17T18:32:14Z",
+      "recommendation": "O ritmo atual indica estouro do orçamento. Reduza gastos discricionários ou aumente o limite para absorver despesas essenciais."
+    },
+    {
+      "budgetId": 63,
+      "categoryId": 8,
+      "categoryName": "Transporte",
+      "amount": 500.00,
+      "spent": 180.00,
+      "remaining": 320.00,
+      "percentageUsed": 36.0,
+      "status": "Normal",
+      "projectedSpend": 360.00,
+      "projectedVariance": -140.00,
+      "suggestedBudget": 450.00,
+      "budgetVariance": 50.00,
+      "potentialReallocation": 140.00,
+      "dailyBudget": 16.67,
+      "burnRate": 12.00,
+      "burnRateVariance": -4.67,
+      "transactionsCount": 6,
+      "lastTransactionDate": "2025-11-14T09:03:01Z",
+      "recommendation": "Você está dentro do planejado. Continue acompanhando para manter o desempenho atual."
+    }
+  ],
+  "atRisk": [
+    {
+      "categoryId": 5,
+      "categoryName": "Alimentação",
+      "status": "Crítico",
+      "projectedVariance": 150.00,
+      "remaining": 250.00,
+      "potentialReallocation": 0.00
+    }
+  ],
+  "comfortable": [
+    {
+      "categoryId": 8,
+      "categoryName": "Transporte",
+      "status": "Normal",
+      "projectedVariance": -140.00,
+      "remaining": 320.00,
+      "potentialReallocation": 140.00
+    }
+  ]
 }
 ```
 
@@ -308,21 +393,60 @@
 ]
 ```
 
+### GET `/history`
+- Query: `days` (1–365, padrão 30).
+- Requer token. Retorna snapshots persistidos nos últimos `days`, úteis para dashboards e notificações.
+- Usa o mesmo contrato `FinancialInsightDto` da rota principal.
+
 ---
 
 ## Exportação (`/api/v2/export`)
 
+### Parâmetros de consulta comuns
+Todos os endpoints de exportação suportam parâmetros opcionais via o objeto `export` para personalizar a formatação e entrega:
+
+- `export.locale`: Cultura para formatação (ex.: "pt-BR", "en-US"). Padrão: "pt-BR"
+- `export.variant`: "Summary" ou "Detailed". Padrão: "Detailed"
+- `export.delivery`: Modo de entrega: "Download", "Email" ou "SignedLink". Padrão: "Download"
+- `export.email`: Endereço de email obrigatório para entrega por Email.
+- `export.currency`: Símbolo de moeda personalizado (ex.: "USD").
+- `export.cacheSeconds`: Duração do cache em segundos. Padrão: 300
+
+Quando o modo de entrega não for "Download", a resposta será JSON contendo `mode`, `message`, `location` (se aplicável) e `expiresAt`.
+
 ### CSV
-- `GET /transactions/csv?startDate=&endDate=`
-- `GET /categories/csv`
-- `GET /goals/csv?month=&year=`
-- Resposta: arquivo `text/csv` gerado pelo CsvHelper com cabeçalhos em português.
+- `GET /transactions/csv?startDate=&endDate=&export.locale=pt-BR&export.delivery=Download`
+- `GET /categories/csv?export.variant=Summary`
+- `GET /goals/csv?month=&year=&export.delivery=Email&export.email=user@example.com`
+- Resposta para Download: arquivo `text/csv` gerado pelo CsvHelper com cabeçalhos em português.
+- Resposta para Email/SignedLink: JSON com detalhes da entrega.
+
+#### Exemplo de resposta para entrega por Email
+```json
+{
+  "mode": "Email",
+  "message": "Arquivo enviado por email.",
+  "location": null,
+  "expiresAt": "2025-11-08T15:30:00Z"
+}
+```
+
+#### Exemplo de resposta para SignedLink
+```json
+{
+  "mode": "SignedLink",
+  "message": "Disponível para download.",
+  "location": "exports/transacoes_20251108_153000.csv?token=abc123",
+  "expiresAt": "2025-11-08T15:35:00Z"
+}
+```
 
 ### PDF
-- `GET /transactions/pdf?startDate=&endDate=`
-- `GET /financial-report/pdf?startDate=&endDate=`
-- `GET /goals-report/pdf?month=&year=`
-- Resposta: `application/pdf` produzido pelo QuestPDF.
+- `GET /transactions/pdf?startDate=&endDate=&export.locale=en-US&export.currency=USD`
+- `GET /financial-report/pdf?startDate=&endDate=&export.variant=Summary`
+- `GET /goals-report/pdf?month=&year=&export.delivery=SignedLink`
+- Resposta para Download: `application/pdf` produzido pelo QuestPDF.
+- Resposta para Email/SignedLink: JSON similar aos exemplos acima.
 
 ---
 

@@ -1,7 +1,9 @@
 using CleverBudget.Api.Controllers;
+using CleverBudget.Api.Extensions;
 using CleverBudget.Core.Common;
 using CleverBudget.Core.DTOs;
 using CleverBudget.Core.Interfaces;
+using CleverBudget.Core.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -51,7 +53,13 @@ public class GoalsControllerTests
         };
 
         _goalServiceMock
-            .Setup(s => s.GetPagedAsync(UserId, It.IsAny<PaginationParams>(), null, null))
+            .Setup(s => s.GetPagedAsync(
+                UserId,
+                It.IsAny<PaginationParams>(),
+                It.Is<int?>(m => m == null),
+                It.Is<int?>(y => y == null),
+                It.Is<int?>(c => c == null),
+                It.Is<CategoryKind?>(k => k == null)))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -76,7 +84,13 @@ public class GoalsControllerTests
         };
 
         _goalServiceMock
-            .Setup(s => s.GetPagedAsync(UserId, It.IsAny<PaginationParams>(), 11, 2025))
+            .Setup(s => s.GetPagedAsync(
+                UserId,
+                It.IsAny<PaginationParams>(),
+                It.Is<int?>(m => m == 11),
+                It.Is<int?>(y => y == 2025),
+                It.Is<int?>(c => c == null),
+                It.Is<CategoryKind?>(k => k == null)))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -86,8 +100,10 @@ public class GoalsControllerTests
         _goalServiceMock.Verify(s => s.GetPagedAsync(
             UserId,
             It.IsAny<PaginationParams>(),
-            11,
-            2025), Times.Once);
+            It.Is<int?>(m => m == 11),
+            It.Is<int?>(y => y == 2025),
+            It.Is<int?>(c => c == null),
+            It.Is<CategoryKind?>(k => k == null)), Times.Once);
     }
 
     [Fact]
@@ -101,7 +117,12 @@ public class GoalsControllerTests
         };
 
         _goalServiceMock
-            .Setup(s => s.GetAllAsync(UserId, null, null))
+            .Setup(s => s.GetAllAsync(
+                UserId,
+                It.Is<int?>(m => m == null),
+                It.Is<int?>(y => y == null),
+                It.Is<int?>(c => c == null),
+                It.Is<CategoryKind?>(k => k == null)))
             .ReturnsAsync(goals);
 
         // Act
@@ -217,8 +238,14 @@ public class GoalsControllerTests
         };
 
         _goalServiceMock
+            .Setup(s => s.GetByIdAsync(1, UserId))
+            .ReturnsAsync(updatedGoal);
+
+        _goalServiceMock
             .Setup(s => s.UpdateAsync(1, updateDto, UserId))
             .ReturnsAsync(updatedGoal);
+
+        _controller.ControllerContext.HttpContext.Request.Headers["If-Match"] = EtagGenerator.Create(updatedGoal);
 
         // Act
         var result = await _controller.Update(1, updateDto);
@@ -236,7 +263,7 @@ public class GoalsControllerTests
         var updateDto = new UpdateGoalDto { TargetAmount = 2000 };
 
         _goalServiceMock
-            .Setup(s => s.UpdateAsync(999, updateDto, UserId))
+            .Setup(s => s.GetByIdAsync(999, UserId))
             .ReturnsAsync((GoalResponseDto?)null);
 
         // Act

@@ -1,9 +1,11 @@
 using CleverBudget.Core.Entities;
 using CleverBudget.Core.Enums;
+using CleverBudget.Core.Interfaces;
 using CleverBudget.Infrastructure.Data;
 using CleverBudget.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Infrastructure;
+using Moq;
 using System.Text;
 using Xunit;
 
@@ -13,6 +15,7 @@ public class ExportServiceTests : IDisposable
 {
     private readonly AppDbContext _context;
     private readonly ExportService _exportService;
+    private readonly Mock<IBudgetService> _budgetServiceMock;
     private readonly string _testUserId;
     private readonly Category _testCategory;
 
@@ -26,7 +29,8 @@ public class ExportServiceTests : IDisposable
             .Options;
         _context = new AppDbContext(options);
 
-        _exportService = new ExportService(_context);
+        _budgetServiceMock = new Mock<IBudgetService>();
+        _exportService = new ExportService(_context, _budgetServiceMock.Object);
 
         _testUserId = Guid.NewGuid().ToString();
         _testCategory = new Category
@@ -162,10 +166,10 @@ public class ExportServiceTests : IDisposable
 
         Assert.NotNull(csv);
         var csvContent = Encoding.UTF8.GetString(csv);
-        Assert.Contains("Mes", csvContent);
-        Assert.Contains("Ano", csvContent);
-        Assert.Contains("Alimentação", csvContent);
-        Assert.Contains("1000", csvContent);
+    Assert.Contains("Mes", csvContent);
+    Assert.Contains("Ano", csvContent);
+    Assert.Contains("Alimentação", csvContent);
+    Assert.Contains("R$ 1.000,00", csvContent);
     }
 
     [Fact]

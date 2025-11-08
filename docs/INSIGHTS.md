@@ -21,7 +21,11 @@ Cada insight retorna:
 
 ## 🔄 Frequência
 
-Os insights são calculados sob demanda via API. A implementação atual não persiste resultados; cada consulta recalcula os indicadores usando os dados disponíveis. Esse comportamento simplifica a primeira entrega e mantém as informações sempre atualizadas.
+Os insights são calculados sob demanda via API e, a cada geração, um snapshot é persistido em banco de dados.
+
+- Cada insight armazenado guarda o contexto do filtro (datas, categoria, flags de receita/despesa).
+- Os snapshots são retidos por até **180 dias**, permitindo análises históricas e dashboards.
+- Para evitar duplicidades, insights com o mesmo título gerados no mesmo dia são substituídos.
 
 ## ⚙️ Endpoint
 
@@ -63,6 +67,16 @@ GET /api/v2/insights
   }
 ]
 ```
+
+### Histórico Persistido
+
+```
+GET /api/v2/insights/history?days=30
+```
+
+- Retorna os insights armazenados nos últimos `days` (1–365, padrão 30), ordenados por data e severidade.
+- Útil para painéis analíticos, emails e notificações agendadas.
+- A resposta usa o mesmo contrato `FinancialInsightDto`.
 
 ## 🔮 Próximos Passos
 

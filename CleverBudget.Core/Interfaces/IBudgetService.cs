@@ -18,4 +18,6 @@ public interface IBudgetService
     Task<IEnumerable<BudgetResponseDto>> GetCurrentMonthBudgetsAsync(string userId);
     Task<decimal> GetTotalBudgetForMonthAsync(string userId, int month, int year);
     Task<decimal> GetTotalSpentForMonthAsync(string userId, int month, int year);
+    Task<BudgetOverviewDto> GetOverviewAsync(string userId, int? year = null, int? month = null);
+    Task<IReadOnlyCollection<BudgetTrendPointDto>> GetTrendAsync(string userId, int months = 6);
 }

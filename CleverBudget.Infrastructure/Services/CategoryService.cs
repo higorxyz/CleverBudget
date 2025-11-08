@@ -4,6 +4,7 @@ using CleverBudget.Core.Entities;
 using CleverBudget.Core.Interfaces;
 using CleverBudget.Infrastructure.Data;
 using CleverBudget.Infrastructure.Extensions;
+using CleverBudget.Infrastructure.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace CleverBudget.Infrastructure.Services;
@@ -21,11 +22,18 @@ public class CategoryService : ICategoryService
     /// Método NOVO com paginação
     /// </summary>
     public async Task<PagedResult<CategoryResponseDto>> GetPagedAsync(
-        string userId, 
-        PaginationParams paginationParams)
+        string userId,
+        PaginationParams paginationParams,
+        CategoryFilterOptions? filter = null,
+        bool includeUsage = false)
     {
         var query = _context.Categories
             .Where(c => c.UserId == userId);
+
+        if (filter != null)
+        {
+            query = ApplyFilters(query, filter, userId);
+        }
 
         query = ApplySorting(query, paginationParams.SortBy, paginationParams.SortOrder);
 
@@ -36,10 +44,28 @@ public class CategoryService : ICategoryService
             Icon = c.Icon,
             Color = c.Color,
             IsDefault = c.IsDefault,
-            CreatedAt = c.CreatedAt
+            CreatedAt = c.CreatedAt,
+            Kind = c.Kind,
+            Segment = c.Segment ?? string.Empty,
+            Tags = CategoryTagHelper.Parse(c.Tags)
         });
 
-        return await pagedQuery.ToPagedResultAsync(paginationParams);
+        var pagedResult = await pagedQuery.ToPagedResultAsync(paginationParams);
+
+        if (includeUsage && pagedResult.Items.Count > 0)
+        {
+            var usageLookup = await BuildUsageLookupAsync(userId, pagedResult.Items.Select(c => c.Id).ToArray());
+
+            foreach (var category in pagedResult.Items)
+            {
+                if (usageLookup.TryGetValue(category.Id, out var usage))
+                {
+                    category.Usage = usage;
+                }
+            }
+        }
+
+        return pagedResult;
     }
 
     public async Task<IEnumerable<CategoryResponseDto>> GetAllAsync(string userId)
@@ -54,11 +80,121 @@ public class CategoryService : ICategoryService
                 Icon = c.Icon,
                 Color = c.Color,
                 IsDefault = c.IsDefault,
-                CreatedAt = c.CreatedAt
+                CreatedAt = c.CreatedAt,
+                Kind = c.Kind,
+                Segment = c.Segment ?? string.Empty,
+                Tags = CategoryTagHelper.Parse(c.Tags)
             })
             .ToListAsync();
 
         return categories;
+    }
+
+    private IQueryable<Category> ApplyFilters(IQueryable<Category> query, CategoryFilterOptions filter, string userId)
+    {
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+        {
+            var search = filter.Search.Trim();
+            var pattern = $"%{search}%";
+            query = query.Where(c => EF.Functions.Like(c.Name, pattern) || (c.Segment != null && EF.Functions.Like(c.Segment, pattern)));
+        }
+
+        if (filter.Kinds != null && filter.Kinds.Count > 0)
+        {
+            query = query.Where(c => filter.Kinds.Contains(c.Kind));
+        }
+
+        if (filter.Segments != null && filter.Segments.Count > 0)
+        {
+            var normalizedSegments = filter.Segments
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim().ToLower())
+                .ToArray();
+
+            if (normalizedSegments.Length > 0)
+            {
+                query = query.Where(c => c.Segment != null && normalizedSegments.Contains(c.Segment.ToLower()));
+            }
+        }
+
+        if (filter.OnlyWithGoals.HasValue)
+        {
+            if (filter.OnlyWithGoals.Value)
+            {
+                query = query.Where(c => _context.Goals.Any(g => g.CategoryId == c.Id && g.UserId == userId));
+            }
+            else
+            {
+                query = query.Where(c => !_context.Goals.Any(g => g.CategoryId == c.Id && g.UserId == userId));
+            }
+        }
+
+        if (filter.OnlyWithTransactions.HasValue)
+        {
+            if (filter.OnlyWithTransactions.Value)
+            {
+                query = query.Where(c => _context.Transactions.Any(t => t.CategoryId == c.Id && t.UserId == userId));
+            }
+            else
+            {
+                query = query.Where(c => !_context.Transactions.Any(t => t.CategoryId == c.Id && t.UserId == userId));
+            }
+        }
+
+        return query;
+    }
+
+    private async Task<Dictionary<int, CategoryUsageSummaryDto>> BuildUsageLookupAsync(string userId, int[] categoryIds)
+    {
+        var now = DateTime.UtcNow;
+        var currentMonth = now.Month;
+        var currentYear = now.Year;
+
+        var transactions = await _context.Transactions
+            .Where(t => t.UserId == userId && categoryIds.Contains(t.CategoryId))
+            .GroupBy(t => t.CategoryId)
+            .Select(g => new
+            {
+                CategoryId = g.Key,
+                Count = g.Count(),
+                Total = g.Sum(t => t.Amount),
+                LastDate = g.Max(t => (DateTime?)t.Date)
+            })
+            .ToListAsync();
+
+        var activeGoals = await _context.Goals
+            .Where(g => g.UserId == userId && categoryIds.Contains(g.CategoryId))
+            .GroupBy(g => g.CategoryId)
+            .Select(g => new
+            {
+                CategoryId = g.Key,
+                ActiveCount = g.Count(goal => goal.Year > currentYear || (goal.Year == currentYear && goal.Month >= currentMonth))
+            })
+            .ToListAsync();
+
+        var usageLookup = categoryIds.ToDictionary(id => id, id => new CategoryUsageSummaryDto());
+
+        foreach (var item in transactions)
+        {
+            usageLookup[item.CategoryId].TransactionCount = item.Count;
+            usageLookup[item.CategoryId].TransactionTotal = item.Total;
+            usageLookup[item.CategoryId].LastTransactionDate = item.LastDate;
+        }
+
+        foreach (var goal in activeGoals)
+        {
+            usageLookup[goal.CategoryId].ActiveGoals = goal.ActiveCount;
+        }
+
+        foreach (var usage in usageLookup.Values)
+        {
+            if (usage.TransactionCount == 0 && usage.ActiveGoals == 0)
+            {
+                usage.LastTransactionDate = null;
+            }
+        }
+
+        return usageLookup;
     }
 
     public async Task<CategoryResponseDto?> GetByIdAsync(int id, string userId)
@@ -76,7 +212,10 @@ public class CategoryService : ICategoryService
             Icon = category.Icon,
             Color = category.Color,
             IsDefault = category.IsDefault,
-            CreatedAt = category.CreatedAt
+            CreatedAt = category.CreatedAt,
+            Kind = category.Kind,
+            Segment = category.Segment ?? string.Empty,
+            Tags = CategoryTagHelper.Parse(category.Tags)
         };
     }
 
@@ -94,6 +233,9 @@ public class CategoryService : ICategoryService
             Name = dto.Name,
             Icon = dto.Icon,
             Color = dto.Color,
+            Kind = dto.Kind,
+            Segment = string.IsNullOrWhiteSpace(dto.Segment) ? null : dto.Segment.Trim(),
+            Tags = CategoryTagHelper.Serialize(dto.Tags),
             IsDefault = false,
             CreatedAt = DateTime.UtcNow
         };
@@ -131,6 +273,15 @@ public class CategoryService : ICategoryService
 
         if (dto.Color != null)
             category.Color = dto.Color;
+
+        if (dto.Kind.HasValue)
+            category.Kind = dto.Kind.Value;
+
+        if (dto.Segment != null)
+            category.Segment = string.IsNullOrWhiteSpace(dto.Segment) ? null : dto.Segment.Trim();
+
+        if (dto.Tags != null)
+            category.Tags = CategoryTagHelper.Serialize(dto.Tags);
 
         await _context.SaveChangesAsync();
 
@@ -182,4 +333,5 @@ public class CategoryService : ICategoryService
             _ => query.OrderBy(c => c.Name) // Default: ordem alfabética
         };
     }
+
 }

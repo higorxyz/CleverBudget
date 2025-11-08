@@ -2,10 +2,13 @@ using Asp.Versioning;
 using CleverBudget.Api.Extensions;
 using CleverBudget.Core.Common;
 using CleverBudget.Core.DTOs;
+using CleverBudget.Core.Enums;
 using CleverBudget.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Linq;
 using System.Security.Claims;
 
 namespace CleverBudget.Api.Controllers;
@@ -45,8 +48,10 @@ public class GoalsController : ControllerBase
         [FromQuery] int pageSize = 10,
         [FromQuery] string? sortBy = null,
         [FromQuery] string? sortOrder = "desc",
-        [FromQuery] int? month = null, 
-        [FromQuery] int? year = null)
+        [FromQuery] int? month = null,
+        [FromQuery] int? year = null,
+        [FromQuery] int? categoryId = null,
+        [FromQuery] CategoryKind? kind = null)
     {
         var userId = GetUserId();
         
@@ -58,7 +63,7 @@ public class GoalsController : ControllerBase
             SortOrder = sortOrder
         };
 
-        var result = await _goalService.GetPagedAsync(userId, paginationParams, month, year);
+        var result = await _goalService.GetPagedAsync(userId, paginationParams, month, year, categoryId, kind);
         var etag = EtagGenerator.Create(result);
 
         if (this.RequestHasMatchingEtag(etag))
@@ -75,11 +80,13 @@ public class GoalsController : ControllerBase
     /// </summary>
     [HttpGet("all")]
     public async Task<IActionResult> GetAllWithoutPagination(
-        [FromQuery] int? month = null, 
-        [FromQuery] int? year = null)
+        [FromQuery] int? month = null,
+        [FromQuery] int? year = null,
+        [FromQuery] int? categoryId = null,
+        [FromQuery] CategoryKind? kind = null)
     {
         var userId = GetUserId();
-        var goals = await _goalService.GetAllAsync(userId, month, year);
+        var goals = await _goalService.GetAllAsync(userId, month, year, categoryId, kind);
         var etag = EtagGenerator.Create(goals);
 
         if (this.RequestHasMatchingEtag(etag))
@@ -136,10 +143,31 @@ public class GoalsController : ControllerBase
     public async Task<IActionResult> Update(int id, [FromBody] UpdateGoalDto dto)
     {
         var userId = GetUserId();
+        var existing = await _goalService.GetByIdAsync(id, userId);
+
+        if (existing == null)
+            return NotFound(new { message = "Meta não encontrada." });
+
+        if (!Request.Headers.TryGetValue("If-Match", out var etagHeader))
+        {
+            return StatusCode(StatusCodes.Status428PreconditionRequired, new { message = "Cabeçalho If-Match é obrigatório." });
+        }
+
+        var currentEtag = EtagGenerator.Create(existing);
+        var providedEtag = etagHeader.FirstOrDefault()?.Trim('"');
+
+        if (string.IsNullOrWhiteSpace(providedEtag) || !string.Equals(providedEtag, currentEtag, StringComparison.Ordinal))
+        {
+            return StatusCode(StatusCodes.Status412PreconditionFailed, new { message = "A versão da meta está desatualizada." });
+        }
+
         var goal = await _goalService.UpdateAsync(id, dto, userId);
 
         if (goal == null)
             return NotFound(new { message = "Meta não encontrada." });
+
+        var newEtag = EtagGenerator.Create(goal);
+        this.SetEtagHeader(newEtag);
 
         return Ok(goal);
     }
@@ -176,5 +204,38 @@ public class GoalsController : ControllerBase
 
         this.SetEtagHeader(etag);
         return Ok(status);
+    }
+
+    /// <summary>
+    /// Obter visão de metas atrasadas, em risco e concluídas
+    /// </summary>
+    [HttpGet("insights")]
+    public async Task<IActionResult> GetInsights(
+        [FromQuery] int? month = null,
+        [FromQuery] int? year = null,
+        [FromQuery] int? categoryId = null,
+        [FromQuery] CategoryKind? kind = null,
+        [FromQuery] decimal riskThreshold = 80)
+    {
+        var userId = GetUserId();
+        var filter = new GoalInsightsFilterDto
+        {
+            Month = month,
+            Year = year,
+            CategoryId = categoryId,
+            CategoryKind = kind,
+            RiskThresholdPercentage = riskThreshold
+        };
+
+        var insights = await _goalService.GetInsightsAsync(userId, filter);
+        var etag = EtagGenerator.Create(insights);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
+        return Ok(insights);
     }
 }

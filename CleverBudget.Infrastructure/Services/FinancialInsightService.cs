@@ -3,8 +3,10 @@ using CleverBudget.Core.Entities;
 using CleverBudget.Core.Enums;
 using CleverBudget.Core.Interfaces;
 using CleverBudget.Infrastructure.Data;
+using CleverBudget.Infrastructure.Notifications;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace CleverBudget.Infrastructure.Services;
 
@@ -12,11 +14,23 @@ public class FinancialInsightService : IFinancialInsightService
 {
     private readonly AppDbContext _context;
     private readonly ILogger<FinancialInsightService> _logger;
+    private readonly IRealtimeNotifier _realtimeNotifier;
+    private const int HistoryRetentionDays = 180;
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        WriteIndented = false
+    };
 
     public FinancialInsightService(AppDbContext context, ILogger<FinancialInsightService> logger)
+        : this(context, logger, NullRealtimeNotifier.Instance)
+    {
+    }
+
+    public FinancialInsightService(AppDbContext context, ILogger<FinancialInsightService> logger, IRealtimeNotifier realtimeNotifier)
     {
         _context = context;
         _logger = logger;
+        _realtimeNotifier = realtimeNotifier ?? NullRealtimeNotifier.Instance;
     }
 
     public async Task<IReadOnlyList<FinancialInsightDto>> GenerateInsightsAsync(
@@ -24,8 +38,8 @@ public class FinancialInsightService : IFinancialInsightService
         FinancialInsightFilter filter,
         CancellationToken cancellationToken = default)
     {
-    var normalizedEndDate = NormalizeDate(filter.EndDate) ?? DateTime.UtcNow.Date;
-    var normalizedStartDate = NormalizeDate(filter.StartDate) ?? normalizedEndDate.AddMonths(-3).AddDays(1 - normalizedEndDate.Day);
+        var normalizedEndDate = NormalizeDate(filter.EndDate) ?? DateTime.UtcNow.Date;
+        var normalizedStartDate = NormalizeDate(filter.StartDate) ?? normalizedEndDate.AddMonths(-3).AddDays(1 - normalizedEndDate.Day);
 
         if (normalizedEndDate.Kind == DateTimeKind.Unspecified)
         {
@@ -88,10 +102,32 @@ public class FinancialInsightService : IFinancialInsightService
             _logger.LogError(ex, "Erro ao gerar insights financeiros para o usuário {UserId}", userId);
         }
 
+        await PersistInsightsAsync(userId, filter, insights, cancellationToken);
+
         return insights
             .OrderByDescending(i => i.Severity)
             .ThenByDescending(i => i.ImpactAmount ?? 0m)
             .ThenByDescending(i => i.GeneratedAt)
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<FinancialInsightDto>> GetHistoryAsync(
+        string userId,
+        int days,
+        CancellationToken cancellationToken = default)
+    {
+        var since = DateTime.UtcNow.AddDays(-Math.Max(1, days));
+
+        var records = await _context.FinancialInsights
+            .AsNoTracking()
+            .Where(r => r.UserId == userId && r.GeneratedAt >= since)
+            .OrderByDescending(r => r.GeneratedAt)
+            .ThenByDescending(r => r.Severity)
+            .Take(200)
+            .ToListAsync(cancellationToken);
+
+        return records
+            .Select(MapToDto)
             .ToList();
     }
 
@@ -474,5 +510,116 @@ public class FinancialInsightService : IFinancialInsightService
             .Include(b => b.Category)
             .Where(b => b.UserId == userId && b.Month == month && b.Year == year)
             .ToListAsync(cancellationToken);
+    }
+
+    private async Task PersistInsightsAsync(
+        string userId,
+        FinancialInsightFilter filter,
+        IReadOnlyCollection<FinancialInsightDto> insights,
+        CancellationToken cancellationToken)
+    {
+        if (insights.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var now = DateTime.UtcNow;
+            var retentionThreshold = now.AddDays(-HistoryRetentionDays);
+            var normalizedStart = NormalizeDate(filter.StartDate);
+            var normalizedEnd = NormalizeDate(filter.EndDate);
+
+            var titles = insights.Select(i => i.Title).ToList();
+
+            var existing = await _context.FinancialInsights
+                .Where(r => r.UserId == userId && r.GeneratedAt.Date == now.Date && titles.Contains(r.Title))
+                .ToListAsync(cancellationToken);
+
+            if (existing.Count > 0)
+            {
+                _context.FinancialInsights.RemoveRange(existing);
+            }
+
+            foreach (var insight in insights)
+            {
+                var record = MapToRecord(userId, normalizedStart, normalizedEnd, filter.CategoryId, filter.IncludeIncomeInsights, filter.IncludeExpenseInsights, insight, now);
+                _context.FinancialInsights.Add(record);
+            }
+
+            var outdated = await _context.FinancialInsights
+                .Where(r => r.UserId == userId && r.GeneratedAt < retentionThreshold)
+                .ToListAsync(cancellationToken);
+
+            if (outdated.Count > 0)
+            {
+                _context.FinancialInsights.RemoveRange(outdated);
+            }
+
+            await _context.SaveChangesAsync(cancellationToken);
+            await _realtimeNotifier.NotifyInsightsUpdatedAsync(userId, insights);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Falha ao persistir insights financeiros para o usuário {UserId}", userId);
+        }
+    }
+
+    private static FinancialInsightRecord MapToRecord(
+        string userId,
+        DateTime? normalizedStart,
+        DateTime? normalizedEnd,
+        int? categoryId,
+        bool includeIncomeInsights,
+        bool includeExpenseInsights,
+        FinancialInsightDto insight,
+        DateTime generatedAt)
+    {
+        var serializedDataPoints = JsonSerializer.Serialize(insight.DataPoints, JsonOptions);
+
+        return new FinancialInsightRecord
+        {
+            UserId = userId,
+            Category = insight.Category,
+            Severity = insight.Severity,
+            Title = insight.Title,
+            Summary = insight.Summary,
+            Recommendation = insight.Recommendation,
+            ImpactAmount = insight.ImpactAmount,
+            BenchmarkAmount = insight.BenchmarkAmount,
+            GeneratedAt = generatedAt,
+            StartDate = normalizedStart,
+            EndDate = normalizedEnd,
+            CategoryId = categoryId,
+            IncludeIncomeInsights = includeIncomeInsights,
+            IncludeExpenseInsights = includeExpenseInsights,
+            DataPointsJson = serializedDataPoints
+        };
+    }
+
+    private static FinancialInsightDto MapToDto(FinancialInsightRecord record)
+    {
+        InsightDataPointDto[]? dataPoints;
+        try
+        {
+            dataPoints = JsonSerializer.Deserialize<InsightDataPointDto[]>(record.DataPointsJson, JsonOptions);
+        }
+        catch
+        {
+            dataPoints = Array.Empty<InsightDataPointDto>();
+        }
+
+        return new FinancialInsightDto
+        {
+            Category = record.Category,
+            Severity = record.Severity,
+            Title = record.Title,
+            Summary = record.Summary,
+            Recommendation = record.Recommendation,
+            ImpactAmount = record.ImpactAmount,
+            BenchmarkAmount = record.BenchmarkAmount,
+            GeneratedAt = record.GeneratedAt,
+            DataPoints = dataPoints ?? Array.Empty<InsightDataPointDto>()
+        };
     }
 }

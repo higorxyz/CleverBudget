@@ -178,6 +178,7 @@ A documentação técnica completa está disponível na pasta [`/docs`](./docs/)
 
 ### Orçamentos (v2)
 - `GET /api/v2/budgets` - Listar orçamentos (`scope=current`, `view=summary` via query string)
+- `GET /api/v2/budgets` - Listar orçamentos (`scope=current`, `view=summary` via query string) com projeções, médias históricas e recomendação automática por categoria
 - `GET /api/v2/budgets/paged` - Listar orçamentos paginados
 - `GET /api/v2/budgets/{id}` - Buscar orçamento por ID
 - `GET /api/v2/budgets/category/{categoryId}/period?month=&year=` - Buscar por categoria e período
@@ -198,6 +199,7 @@ A documentação técnica completa está disponível na pasta [`/docs`](./docs/)
 
 ### Insights (v2)
 - `GET /api/v2/insights` - Gerar insights financeiros automáticos com filtros por período e categoria
+- `GET /api/v2/insights/history` - Consultar snapshots de insights armazenados (1 a 365 dias)
 
 ### Perfil (v2)
 - `GET /api/v2/profile` - Ver perfil do usuário autenticado

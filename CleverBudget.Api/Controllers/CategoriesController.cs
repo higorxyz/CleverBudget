@@ -2,6 +2,7 @@ using Asp.Versioning;
 using CleverBudget.Api.Extensions;
 using CleverBudget.Core.Common;
 using CleverBudget.Core.DTOs;
+using CleverBudget.Core.Enums;
 using CleverBudget.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -42,7 +43,13 @@ public class CategoriesController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] string? sortBy = "name",
-        [FromQuery] string? sortOrder = "asc")
+        [FromQuery] string? sortOrder = "asc",
+        [FromQuery] string? search = null,
+        [FromQuery] string? kinds = null,
+        [FromQuery] string? segments = null,
+        [FromQuery] bool includeUsage = false,
+        [FromQuery] bool? onlyWithGoals = null,
+        [FromQuery] bool? onlyWithTransactions = null)
     {
         var userId = GetUserId();
         
@@ -54,7 +61,26 @@ public class CategoriesController : ControllerBase
             SortOrder = sortOrder
         };
 
-        var result = await _categoryService.GetPagedAsync(userId, paginationParams);
+        var filter = new CategoryFilterOptions
+        {
+            Search = string.IsNullOrWhiteSpace(search) ? null : search,
+            Kinds = ParseKinds(kinds),
+            Segments = ParseSegments(segments),
+            OnlyWithGoals = onlyWithGoals,
+            OnlyWithTransactions = onlyWithTransactions
+        };
+
+        if (filter.Kinds?.Count == 0)
+        {
+            filter.Kinds = null;
+        }
+
+        if (filter.Segments?.Count == 0)
+        {
+            filter.Segments = null;
+        }
+
+        var result = await _categoryService.GetPagedAsync(userId, paginationParams, filter, includeUsage);
         var etag = EtagGenerator.Create(result);
         if (this.RequestHasMatchingEtag(etag))
         {
@@ -150,5 +176,46 @@ public class CategoriesController : ControllerBase
             return BadRequest(new { message = "Não é possível deletar: categoria padrão, não encontrada ou possui transações associadas." });
 
         return NoContent();
+    }
+
+    private static IReadOnlyCollection<CategoryKind>? ParseKinds(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        var tokens = raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (tokens.Length == 0)
+        {
+            return Array.Empty<CategoryKind>();
+        }
+
+        var parsed = new List<CategoryKind>();
+        foreach (var token in tokens)
+        {
+            if (Enum.TryParse<CategoryKind>(token, true, out var kind) && !parsed.Contains(kind))
+            {
+                parsed.Add(kind);
+            }
+        }
+
+        return parsed;
+    }
+
+    private static IReadOnlyCollection<string>? ParseSegments(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        var tokens = raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(t => t.Length > 0)
+            .Select(t => t)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return tokens;
     }
 }

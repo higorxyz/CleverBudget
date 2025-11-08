@@ -7,6 +7,7 @@ using CleverBudget.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 using System.Security.Claims;
 
 namespace CleverBudget.Api.Controllers;
@@ -51,7 +52,11 @@ public class TransactionsController : ControllerBase
         [FromQuery] TransactionType? type = null,
         [FromQuery] int? categoryId = null,
         [FromQuery] DateTime? startDate = null,
-        [FromQuery] DateTime? endDate = null)
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery(Name = "q")] string? search = null,
+        [FromQuery] decimal? minAmount = null,
+        [FromQuery] decimal? maxAmount = null,
+        [FromQuery] string? include = null)
     {
         var userId = GetUserId();
         
@@ -63,13 +68,24 @@ public class TransactionsController : ControllerBase
             SortOrder = sortOrder
         };
 
+        var includes = (include ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(i => i.ToLowerInvariant())
+            .ToHashSet();
+
+        var includeCategory = includes.Contains("category");
+
         var result = await _transactionService.GetPagedAsync(
             userId, 
             paginationParams, 
             type, 
             categoryId, 
             startDate, 
-            endDate
+            endDate,
+            search,
+            minAmount,
+            maxAmount,
+            includeCategory
         );
 
         var etag = EtagGenerator.Create(result);
@@ -147,5 +163,38 @@ public class TransactionsController : ControllerBase
             return NotFound(new { message = "Transação não encontrada." });
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Importar transações em massa via CSV
+    /// </summary>
+    [HttpPost("import")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(TransactionImportResultDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ImportCsv(
+        [FromForm] IFormFile file,
+        [FromForm] bool hasHeader = true,
+        [FromForm] string delimiter = ",",
+        [FromForm] bool upsertExisting = false,
+        [FromForm] string categoryFallbackKind = "Essential")
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new { message = "Arquivo CSV é obrigatório." });
+        }
+
+        await using var stream = file.OpenReadStream();
+
+        var options = new TransactionImportOptions
+        {
+            HasHeader = hasHeader,
+            Delimiter = delimiter,
+            UpsertExisting = upsertExisting,
+            CategoryFallbackKind = categoryFallbackKind
+        };
+
+        var userId = GetUserId();
+        var result = await _transactionService.ImportFromCsvAsync(userId, stream, options);
+        return Ok(result);
     }
 }

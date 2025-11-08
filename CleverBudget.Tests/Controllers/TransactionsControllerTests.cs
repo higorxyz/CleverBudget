@@ -58,7 +58,11 @@ public class TransactionsControllerTests
                 null,
                 null,
                 null,
-                null))
+                null,
+                null,
+                null,
+                null,
+                false))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -93,7 +97,11 @@ public class TransactionsControllerTests
                 TransactionType.Expense,
                 null,
                 null,
-                null))
+                null,
+                null,
+                null,
+                null,
+                false))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -127,7 +135,11 @@ public class TransactionsControllerTests
                 null,
                 null,
                 startDate,
-                endDate))
+                endDate,
+                null,
+                null,
+                null,
+                false))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -140,7 +152,11 @@ public class TransactionsControllerTests
             null,
             null,
             startDate,
-            endDate), Times.Once);
+            endDate,
+            null,
+            null,
+            null,
+            false), Times.Once);
     }
 
     [Fact]
@@ -339,7 +355,11 @@ public class TransactionsControllerTests
                 null,
                 5,
                 null,
-                null))
+                null,
+                null,
+                null,
+                null,
+                false))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -352,7 +372,11 @@ public class TransactionsControllerTests
             null,
             5,
             null,
-            null), Times.Once);
+            null,
+            null,
+            null,
+            null,
+            false), Times.Once);
     }
 
     [Fact]
@@ -374,7 +398,11 @@ public class TransactionsControllerTests
                 null,
                 null,
                 null,
-                null))
+                null,
+                null,
+                null,
+                null,
+                false))
             .ReturnsAsync(pagedResult);
 
         // Act
@@ -387,6 +415,10 @@ public class TransactionsControllerTests
             null,
             null,
             null,
-            null), Times.Once);
+            null,
+            null,
+            null,
+            null,
+            false), Times.Once);
     }
 }

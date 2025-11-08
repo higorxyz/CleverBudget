@@ -729,6 +729,10 @@ public class BudgetServiceTests : IDisposable
         Assert.Equal(300m, result.Spent);
         Assert.Equal(700m, result.Remaining);
         Assert.Equal(30m, result.PercentageUsed);
+        Assert.Equal("Normal", result.Status);
+        Assert.Equal(1, result.TransactionsCount);
+        Assert.NotNull(result.LastTransactionDate);
+        Assert.False(string.IsNullOrWhiteSpace(result.Recommendation));
     }
 
     [Fact]
@@ -809,6 +813,159 @@ public class BudgetServiceTests : IDisposable
         Assert.Equal(_testCategory.Name, result.CategoryName);
         Assert.Equal(_testCategory.Icon, result.CategoryIcon);
         Assert.Equal(_testCategory.Color, result.CategoryColor);
+        Assert.Equal(_testCategory.Id, result.CategoryId);
+        Assert.Equal(budget.Amount, result.Amount);
+        Assert.True(result.DailyBudget >= 0);
+        Assert.True(result.SuggestedBudget >= 0);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_ComputesHistoricalAveragesAndProjection()
+    {
+        var now = DateTime.UtcNow;
+        var budget = new Budget
+        {
+            UserId = _testUserId,
+            CategoryId = _testCategory.Id,
+            Amount = 1200m,
+            Month = now.Month,
+            Year = now.Year,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.Budgets.Add(budget);
+
+        // Histórico de dois meses
+        var historyMonth1 = new DateTime(now.Year, now.Month, 1).AddMonths(-1).AddDays(5);
+        var historyMonth2 = historyMonth1.AddMonths(-1);
+
+        _context.Transactions.AddRange(
+            new Transaction
+            {
+                UserId = _testUserId,
+                CategoryId = _testCategory.Id,
+                Amount = 800m,
+                Type = TransactionType.Expense,
+                Description = "Histórico 1",
+                Date = historyMonth1,
+                CreatedAt = historyMonth1
+            },
+            new Transaction
+            {
+                UserId = _testUserId,
+                CategoryId = _testCategory.Id,
+                Amount = 900m,
+                Type = TransactionType.Expense,
+                Description = "Histórico 2",
+                Date = historyMonth2,
+                CreatedAt = historyMonth2
+            },
+            new Transaction
+            {
+                UserId = _testUserId,
+                CategoryId = _testCategory.Id,
+                Amount = 400m,
+                Type = TransactionType.Expense,
+                Description = "Atual 1",
+                Date = new DateTime(now.Year, now.Month, Math.Min(5, DateTime.DaysInMonth(now.Year, now.Month))),
+                CreatedAt = DateTime.UtcNow
+            }
+        );
+
+        await _context.SaveChangesAsync();
+
+        var result = await _service.GetByIdAsync(budget.Id, _testUserId);
+
+        Assert.NotNull(result);
+        Assert.True(result.HistoricalAverage > 0);
+        Assert.True(result.ProjectedSpend >= result.Spent);
+        Assert.True(result.DailyBudget > 0);
+        Assert.NotEqual(string.Empty, result.Recommendation);
+        Assert.True(result.DaysElapsed > 0);
+        Assert.True(result.DaysRemaining >= 0);
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_NoBudgets_ReturnsEmptyStructure()
+    {
+        var now = DateTime.UtcNow;
+
+        var overview = await _service.GetOverviewAsync(_testUserId, now.Year, now.Month);
+
+        Assert.NotNull(overview);
+        Assert.Equal(now.Year, overview.Year);
+        Assert.Equal(now.Month, overview.Month);
+        Assert.Equal(0m, overview.TotalBudget);
+        Assert.Equal(0m, overview.TotalSpent);
+        Assert.Empty(overview.Categories);
+        Assert.Empty(overview.AtRisk);
+        Assert.Empty(overview.Comfortable);
+        Assert.False(string.IsNullOrWhiteSpace(overview.Recommendation));
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_WithBudgets_ComputesAggregatedMetrics()
+    {
+        var now = DateTime.UtcNow;
+        var targetYear = now.Year;
+        var targetMonth = now.Month;
+
+        var transportCategory = new Category
+        {
+            Id = 2,
+            UserId = _testUserId,
+            Name = "Transporte",
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.Categories.Add(transportCategory);
+
+        var criticalBudget = new Budget
+        {
+            UserId = _testUserId,
+            CategoryId = _testCategory.Id,
+            Amount = 1000m,
+            Month = targetMonth,
+            Year = targetYear,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var comfortableBudget = new Budget
+        {
+            UserId = _testUserId,
+            CategoryId = transportCategory.Id,
+            Amount = 500m,
+            Month = targetMonth,
+            Year = targetYear,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Budgets.AddRange(criticalBudget, comfortableBudget);
+
+        var transactionDate = new DateTime(targetYear, targetMonth, Math.Min(15, DateTime.DaysInMonth(targetYear, targetMonth)));
+        _context.Transactions.Add(new Transaction
+        {
+            UserId = _testUserId,
+            CategoryId = _testCategory.Id,
+            Amount = 900m,
+            Type = TransactionType.Expense,
+            Description = "Restaurante",
+            Date = transactionDate,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await _context.SaveChangesAsync();
+
+        var overview = await _service.GetOverviewAsync(_testUserId, targetYear, targetMonth);
+
+        Assert.NotNull(overview);
+        Assert.Equal(1500m, overview.TotalBudget);
+        Assert.Equal(900m, overview.TotalSpent);
+        Assert.Equal(600m, overview.Remaining);
+        Assert.True(overview.PercentageUsed > 0);
+        Assert.Equal(2, overview.Categories.Count);
+        Assert.Contains(overview.AtRisk, c => c.CategoryId == _testCategory.Id);
+        Assert.Contains(overview.Comfortable, c => c.CategoryId == transportCategory.Id);
+        Assert.True(overview.SuggestedReallocation >= 0m);
+        Assert.False(string.IsNullOrWhiteSpace(overview.Recommendation));
     }
 
     public void Dispose()

@@ -48,6 +48,29 @@ public class ReportsController : ControllerBase
     }
 
     /// <summary>
+    /// Obter visão consolidada para dashboards (orçamentos, caixa, insights)
+    /// </summary>
+    [HttpGet("dashboard")]
+    public async Task<IActionResult> GetDashboard(
+        [FromQuery] int? year = null,
+        [FromQuery] int? month = null,
+        [FromQuery] int budgetTrendMonths = 6,
+        [FromQuery] int cashflowMonths = 6)
+    {
+        var userId = GetUserId();
+        var dashboard = await _reportService.GetDashboardOverviewAsync(userId, year, month, budgetTrendMonths, cashflowMonths);
+        var etag = EtagGenerator.Create(dashboard);
+
+        if (this.RequestHasMatchingEtag(etag))
+        {
+            return this.CachedStatus();
+        }
+
+        this.SetEtagHeader(etag);
+        return Ok(dashboard);
+    }
+
+    /// <summary>
     /// Obter relatório por categorias
     /// </summary>
     [HttpGet("categories")]

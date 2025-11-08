@@ -164,7 +164,7 @@ public class ReportServiceTests : IDisposable
         await _context.SaveChangesAsync();
 
 
-        var result = await _reportService.GetMonthlyReportAsync(_testUserId, months: 2);
+    var result = await _reportService.GetMonthlyReportAsync(_testUserId, periods: 2);
 
 
         Assert.Equal(2, result.Count());

@@ -6,7 +6,11 @@ namespace CleverBudget.Core.Interfaces;
 public interface ICategoryService
 {
     Task<IEnumerable<CategoryResponseDto>> GetAllAsync(string userId);
-    Task<PagedResult<CategoryResponseDto>> GetPagedAsync(string userId, PaginationParams paginationParams);
+    Task<PagedResult<CategoryResponseDto>> GetPagedAsync(
+        string userId,
+        PaginationParams paginationParams,
+        CategoryFilterOptions? filter = null,
+        bool includeUsage = false);
     Task<CategoryResponseDto?> GetByIdAsync(int id, string userId);
     Task<CategoryResponseDto?> CreateAsync(CreateCategoryDto dto, string userId);
     Task<CategoryResponseDto?> UpdateAsync(int id, UpdateCategoryDto dto, string userId);
