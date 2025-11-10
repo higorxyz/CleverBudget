@@ -254,7 +254,7 @@ try
     builder.Services.AddScoped<ITransactionService, TransactionService>();
     builder.Services.AddScoped<ICategoryService, CategoryService>();
     builder.Services.AddScoped<IGoalService, GoalService>();
-    builder.Services.AddSingleton<IRealtimeNotifier, NullRealtimeNotifier>();
+    builder.Services.AddSingleton<IRealtimeNotifier>(_ => NullRealtimeNotifier.Instance);
     builder.Services.Configure<BackupOptions>(builder.Configuration.GetSection(BackupOptions.SectionName));
 
     builder.Services.AddScoped<IReportService, ReportService>();
