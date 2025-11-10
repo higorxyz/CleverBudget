@@ -7,6 +7,7 @@ using CleverBudget.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Security.Claims;
 
@@ -171,30 +172,39 @@ public class TransactionsController : ControllerBase
     [HttpPost("import")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(TransactionImportResultDto), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ImportCsv(
-        [FromForm] IFormFile file,
-        [FromForm] bool hasHeader = true,
-        [FromForm] string delimiter = ",",
-        [FromForm] bool upsertExisting = false,
-        [FromForm] string categoryFallbackKind = "Essential")
+    public async Task<IActionResult> ImportCsv([FromForm] TransactionImportForm form)
     {
-        if (file == null || file.Length == 0)
+        if (form.File == null || form.File.Length == 0)
         {
             return BadRequest(new { message = "Arquivo CSV é obrigatório." });
         }
 
-        await using var stream = file.OpenReadStream();
+        await using var stream = form.File.OpenReadStream();
 
         var options = new TransactionImportOptions
         {
-            HasHeader = hasHeader,
-            Delimiter = delimiter,
-            UpsertExisting = upsertExisting,
-            CategoryFallbackKind = categoryFallbackKind
+            HasHeader = form.HasHeader,
+            Delimiter = form.Delimiter,
+            UpsertExisting = form.UpsertExisting,
+            CategoryFallbackKind = form.CategoryFallbackKind
         };
 
         var userId = GetUserId();
         var result = await _transactionService.ImportFromCsvAsync(userId, stream, options);
         return Ok(result);
+    }
+
+    public sealed class TransactionImportForm
+    {
+        [Required]
+        public IFormFile? File { get; init; }
+
+        public bool HasHeader { get; init; } = true;
+
+        public string Delimiter { get; init; } = ",";
+
+        public bool UpsertExisting { get; init; }
+
+        public string CategoryFallbackKind { get; init; } = "Essential";
     }
 }
