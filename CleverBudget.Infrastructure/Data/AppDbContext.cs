@@ -143,6 +143,8 @@ public class AppDbContext : IdentityDbContext<User>
             entity.Property(u => u.CreatedAt).IsRequired();
         });
 
+        var providerName = Database.ProviderName;
+
         modelBuilder.Entity<FinancialInsightRecord>(entity =>
         {
             entity.HasKey(f => f.Id);
@@ -156,6 +158,13 @@ public class AppDbContext : IdentityDbContext<User>
             entity.Property(f => f.Severity).HasConversion<string>().HasMaxLength(20);
             entity.Property(f => f.IncludeIncomeInsights).HasConversion<bool>();
             entity.Property(f => f.IncludeExpenseInsights).HasConversion<bool>();
+
+            if (providerName == "Npgsql.EntityFrameworkCore.PostgreSQL")
+            {
+                entity.Property(f => f.GeneratedAt).HasColumnType("timestamp with time zone");
+                entity.Property(f => f.StartDate).HasColumnType("timestamp with time zone");
+                entity.Property(f => f.EndDate).HasColumnType("timestamp with time zone");
+            }
 
             entity.HasOne(f => f.User)
                 .WithMany()
