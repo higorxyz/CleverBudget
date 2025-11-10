@@ -270,7 +270,8 @@ public class ExportControllerTests
         var query = new ExportController.ExportOptionsQuery
         {
             Delivery = "Email",
-            Email = "user@example.com"
+            Email = "user@example.com",
+            CacheSeconds = 60
         };
 
         // Act
@@ -282,9 +283,13 @@ public class ExportControllerTests
         Assert.Equal(ExportDeliveryMode.Email, GetProperty<ExportDeliveryMode>(payload, "Mode"));
         Assert.Equal("Arquivo enviado por email.", GetProperty<string>(payload, "Message"));
         Assert.Null(GetProperty<string?>(payload, "Location"));
+        var expiresAt = GetProperty<DateTimeOffset>(payload, "ExpiresAt");
+        var delta = expiresAt - DateTimeOffset.UtcNow;
+        Assert.InRange(delta.TotalSeconds, 55, 65);
         Assert.NotNull(capturedOptions);
         Assert.Equal(ExportDeliveryMode.Email, capturedOptions!.DeliveryMode);
         Assert.Equal("user@example.com", capturedOptions.Email);
+        Assert.Equal(TimeSpan.FromSeconds(60), capturedOptions.CacheDuration);
         _exportDeliveryServiceMock.Verify(d => d.DeliverAsync(UserId, It.IsAny<string>(), csvData, It.IsAny<ExportRequestOptions>()), Times.Once);
     }
 
@@ -310,7 +315,8 @@ public class ExportControllerTests
 
         var query = new ExportController.ExportOptionsQuery
         {
-            Delivery = "SignedLink"
+            Delivery = "SignedLink",
+            CacheSeconds = 45
         };
 
         // Act
@@ -322,6 +328,9 @@ public class ExportControllerTests
         Assert.Equal("exports/file-token.csv", GetProperty<string>(payload, "Location"));
         Assert.Equal(ExportDeliveryMode.SignedLink, GetProperty<ExportDeliveryMode>(payload, "Mode"));
         Assert.Equal("Disponível", GetProperty<string>(payload, "Message"));
+        var expiresAt = GetProperty<DateTimeOffset>(payload, "ExpiresAt");
+        var delta = expiresAt - DateTimeOffset.UtcNow;
+        Assert.InRange(delta.TotalSeconds, 40, 50);
         _exportDeliveryServiceMock.Verify(d => d.DeliverAsync(UserId, It.IsAny<string>(), csvData, It.IsAny<ExportRequestOptions>()), Times.Once);
     }
 
@@ -359,6 +368,75 @@ public class ExportControllerTests
         Assert.Equal(StatusCodes.Status422UnprocessableEntity, problem.StatusCode);
         Assert.Equal("Falha na entrega da exportação", details.Title);
         _exportDeliveryServiceMock.Verify(d => d.DeliverAsync(UserId, It.IsAny<string>(), csvData, It.IsAny<ExportRequestOptions>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExportTransactionsCsv_DownloadMode_WithCustomOptions_SetsHeadersAndRequestOptions()
+    {
+        // Arrange
+        var csvData = System.Text.Encoding.UTF8.GetBytes("custom");
+        ExportRequestOptions? capturedOptions = null;
+
+        _exportServiceMock
+            .Setup(s => s.ExportTransactionsToCsvAsync(UserId, null, null, It.IsAny<ExportRequestOptions>()))
+            .Callback<string, DateTime?, DateTime?, ExportRequestOptions>((_, _, _, o) => capturedOptions = o)
+            .ReturnsAsync(csvData);
+
+        var query = new ExportController.ExportOptionsQuery
+        {
+            Locale = "en-US",
+            Variant = "Summary",
+            Currency = "USD",
+            CacheSeconds = 120
+        };
+
+        // Act
+        var result = await _controller.ExportTransactionsCsv(null, null, query);
+
+        // Assert
+        var fileResult = Assert.IsType<FileContentResult>(result);
+        Assert.Equal(csvData, fileResult.FileContents);
+        Assert.Equal("en-US", _controller.Response.Headers["Content-Language"].ToString());
+        Assert.Equal("public,max-age=120", _controller.Response.Headers["Cache-Control"].ToString());
+        Assert.NotNull(capturedOptions);
+        Assert.Equal("en-US", capturedOptions!.Culture.Name);
+        Assert.Equal(ExportVariant.Summary, capturedOptions.Variant);
+        Assert.Equal("USD", capturedOptions.CurrencySymbol);
+        Assert.Equal(TimeSpan.FromSeconds(120), capturedOptions.CacheDuration);
+        Assert.Equal(ExportDeliveryMode.Download, capturedOptions.DeliveryMode);
+        Assert.Null(capturedOptions.Email);
+    }
+
+    [Fact]
+    public async Task ExportTransactionsCsv_InvalidExportOptions_FallBackToDefaults()
+    {
+        // Arrange
+        ExportRequestOptions? capturedOptions = null;
+
+        _exportServiceMock
+            .Setup(s => s.ExportTransactionsToCsvAsync(UserId, null, null, It.IsAny<ExportRequestOptions>()))
+            .Callback<string, DateTime?, DateTime?, ExportRequestOptions>((_, _, _, o) => capturedOptions = o)
+            .ReturnsAsync(Array.Empty<byte>());
+
+        var query = new ExportController.ExportOptionsQuery
+        {
+            Locale = "xx-INVALID",
+            Variant = "Unknown",
+            Delivery = "StrangeMode",
+            Currency = "",
+            CacheSeconds = -1
+        };
+
+        // Act
+        await _controller.ExportTransactionsCsv(null, null, query);
+
+        // Assert
+        Assert.NotNull(capturedOptions);
+        Assert.Equal("pt-BR", capturedOptions!.Culture.Name);
+        Assert.Equal(ExportVariant.Detailed, capturedOptions.Variant);
+        Assert.Equal(ExportDeliveryMode.Download, capturedOptions.DeliveryMode);
+        Assert.Equal(TimeSpan.FromMinutes(5), capturedOptions.CacheDuration);
+        Assert.Equal("R$", capturedOptions.CurrencySymbol);
     }
 
     private static T GetProperty<T>(object target, string propertyName)
